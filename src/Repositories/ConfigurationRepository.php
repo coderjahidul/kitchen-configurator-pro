@@ -56,6 +56,92 @@ final class ConfigurationRepository extends AbstractRepository {
 	}
 
 	/**
+	 * Find configurations for a logged-in user.
+	 *
+	 * @param int    $user_id User ID.
+	 * @param int    $limit   Max rows.
+	 * @param int    $offset  Offset.
+	 * @return array<int, Configuration>
+	 */
+	public function find_by_user( int $user_id, int $limit = 20, int $offset = 0 ): array {
+		$table = $this->table_name();
+		$limit = max( 1, min( 100, $limit ) );
+		$offset = max( 0, $offset );
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table from trusted helper.
+		$rows = $this->db->get_results(
+			$this->db->prepare(
+				"SELECT * FROM {$table} WHERE user_id = %d ORDER BY updated_at DESC, id DESC LIMIT %d OFFSET %d",
+				$user_id,
+				$limit,
+				$offset
+			),
+			ARRAY_A
+		);
+
+		if ( ! is_array( $rows ) ) {
+			return array();
+		}
+
+		return array_map( array( $this, 'map_row' ), $rows );
+	}
+
+	/**
+	 * Find configurations for a guest session.
+	 *
+	 * @param string $session_id Session ID.
+	 * @param int    $limit      Max rows.
+	 * @param int    $offset     Offset.
+	 * @return array<int, Configuration>
+	 */
+	public function find_by_session( string $session_id, int $limit = 20, int $offset = 0 ): array {
+		$table = $this->table_name();
+		$limit = max( 1, min( 100, $limit ) );
+		$offset = max( 0, $offset );
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table from trusted helper.
+		$rows = $this->db->get_results(
+			$this->db->prepare(
+				"SELECT * FROM {$table} WHERE session_id = %s AND user_id IS NULL ORDER BY updated_at DESC, id DESC LIMIT %d OFFSET %d",
+				sanitize_text_field( $session_id ),
+				$limit,
+				$offset
+			),
+			ARRAY_A
+		);
+
+		if ( ! is_array( $rows ) ) {
+			return array();
+		}
+
+		return array_map( array( $this, 'map_row' ), $rows );
+	}
+
+	/**
+	 * Count configurations for a user or session.
+	 *
+	 * @param int|null    $user_id    User ID.
+	 * @param string|null $session_id Session ID.
+	 * @return int
+	 */
+	public function count_for_owner( ?int $user_id, ?string $session_id = null ): int {
+		if ( null !== $user_id && $user_id > 0 ) {
+			return $this->count( array( 'user_id' => (string) $user_id ) );
+		}
+
+		if ( null !== $session_id && '' !== $session_id ) {
+			return $this->count(
+				array(
+					'session_id' => $session_id,
+					'user_id'    => null,
+				)
+			);
+		}
+
+		return 0;
+	}
+
+	/**
 	 * {@inheritDoc}
 	 */
 	protected function sanitize( array $data ): array {

@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace KitchenConfiguratorPro;
 
 use KitchenConfiguratorPro\Admin\AdminServiceProvider;
+use KitchenConfiguratorPro\Api\ApiServiceProvider;
 use KitchenConfiguratorPro\CoreServiceProvider;
 use KitchenConfiguratorPro\Database\Migrator;
 
@@ -38,6 +39,13 @@ final class Plugin {
 	 * @var bool
 	 */
 	private bool $booted = false;
+
+	/**
+	 * Whether API services have been registered.
+	 *
+	 * @var bool
+	 */
+	private bool $api_registered = false;
 
 	/**
 	 * Whether admin services have been registered.
@@ -144,7 +152,25 @@ final class Plugin {
 	 */
 	public function on_plugins_loaded(): void {
 		$this->maybe_upgrade_database();
+		$this->register_api();
 		$this->register_admin();
+	}
+
+	/**
+	 * Register REST API layer.
+	 *
+	 * @return void
+	 */
+	private function register_api(): void {
+		if ( $this->api_registered ) {
+			return;
+		}
+
+		$this->api_registered = true;
+
+		$provider = new ApiServiceProvider( $this->container );
+		$provider->register();
+		$provider->boot();
 	}
 
 	/**

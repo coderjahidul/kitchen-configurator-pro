@@ -33,6 +33,8 @@ use KitchenConfiguratorPro\Services\Pricing\CatalogContextBuilder;
 use KitchenConfiguratorPro\Services\Pricing\ConditionEvaluator;
 use KitchenConfiguratorPro\Services\Pricing\PriceHashGenerator;
 use KitchenConfiguratorPro\Services\Pricing\PricingEngine;
+use KitchenConfiguratorPro\Services\CatalogService;
+use KitchenConfiguratorPro\Services\ConfigurationService;
 use KitchenConfiguratorPro\Services\ValidationService;
 
 /**
@@ -164,6 +166,33 @@ final class CoreServiceProvider {
 					$this->container->get( CatalogContextBuilder::class ),
 					$this->container->get( PriceHashGenerator::class ),
 					$calculators
+				);
+			}
+		);
+
+		$this->container->singleton(
+			CatalogService::class,
+			function () {
+				return new CatalogService(
+					$this->container->get( LayoutRepository::class ),
+					$this->container->get( CabinetCategoryRepository::class ),
+					$this->container->get( CabinetRepository::class ),
+					$this->container->get( MaterialRepository::class ),
+					$this->container->get( ColorRepository::class ),
+					$this->container->get( HandleRepository::class ),
+					$this->container->get( AccessoryRepository::class ),
+					$this->container->get( WorktopRepository::class ),
+					$this->container->get( PlinthRepository::class )
+				);
+			}
+		);
+
+		$this->container->singleton(
+			ConfigurationService::class,
+			function () {
+				return new ConfigurationService(
+					$this->container->get( ConfigurationRepository::class ),
+					$this->container->get( PricingEngine::class )
 				);
 			}
 		);

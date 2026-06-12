@@ -18,7 +18,7 @@ Production-ready WordPress plugin for custom kitchen cabinet configuration with 
 | 2 | ✅ Complete | Plugin bootstrap, Composer, migrations |
 | 3 | ✅ Complete | Admin CRUD |
 | 4 | ✅ Complete | Pricing engine |
-| 5 | Pending | REST API |
+| 5 | ✅ Complete | REST API |
 | 6 | Pending | Frontend configurator |
 | 7 | Pending | WooCommerce integration |
 | 8 | Pending | Security & validation |
@@ -36,6 +36,7 @@ Production-ready WordPress plugin for custom kitchen cabinet configuration with 
 - [Phase 2 — Bootstrap](docs/phase-2/PHASE-2.md)
 - [Phase 3 — Admin CRUD](docs/phase-3/PHASE-3.md)
 - [Phase 4 — Pricing Engine](docs/phase-4/PHASE-4.md)
+- [Phase 5 — REST API](docs/phase-5/PHASE-5.md)
 - [SQL Reference](database/schema/schema.sql)
 
 ## License
