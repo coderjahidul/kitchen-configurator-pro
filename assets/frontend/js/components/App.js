@@ -93,7 +93,7 @@ export class App {
 		this.cabinetsStep = new CabinetsStep( this.contentEl, this.store, this.i18n );
 		this.finishesStep = new FinishesStep( this.contentEl, this.store, this.i18n );
 		this.extrasStep = new ExtrasStep( this.contentEl, this.store, this.i18n );
-		this.summaryStep = new SummaryStep( this.contentEl, this.store, this.api, this.i18n, this.currency );
+		this.summaryStep = new SummaryStep( this.contentEl, this.store, this.api, this.i18n, this.currency, this.boot );
 		this.priceSummary = new PriceSummary( this.priceEl, this.i18n, this.currency );
 		this.projectPanel = new ProjectPanel(
 			this.projectsEl,

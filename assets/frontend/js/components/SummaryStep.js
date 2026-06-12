@@ -11,17 +11,19 @@ export class SummaryStep {
 	 * @param {object}      api       API client.
 	 * @param {object}      i18n      Translations.
 	 * @param {string}      currency  Currency.
+	 * @param {object}      boot      Boot config.
 	 */
-	constructor( container, store, api, i18n, currency ) {
+	constructor( container, store, api, i18n, currency, boot = {} ) {
 		this.container = container;
 		this.store = store;
 		this.api = api;
 		this.i18n = i18n;
 		this.currency = currency;
+		this.woocommerceActive = Boolean( boot.woocommerceActive );
 	}
 
 	render( state ) {
-		const { config, pricing, savedUuid, saveMessage, saveError, saving } = state;
+		const { config, pricing, savedUuid, saveMessage, saveError, saving, cartAdding, cartError } = state;
 		const layout = findById( state.catalog?.layouts || [], config.layout_id );
 
 		this.container.innerHTML = `
@@ -58,10 +60,18 @@ export class SummaryStep {
 					<button type="button" class="kcp-btn kcp-btn--primary" id="kcp-save-btn" ${ saving ? 'disabled' : '' }>
 						${ escapeHtml( saving ? this.i18n.loading : savedUuid ? this.i18n.save : this.i18n.save ) }
 					</button>
+					${
+						this.woocommerceActive && savedUuid
+							? `<button type="button" class="kcp-btn kcp-btn--ghost" id="kcp-cart-btn" ${ cartAdding ? 'disabled' : '' }>
+								${ escapeHtml( cartAdding ? this.i18n.addingToCart : this.i18n.addToCart ) }
+							</button>`
+							: ''
+					}
 				</div>
 
 				${ saveMessage ? `<p class="kcp-message kcp-message--success">${ escapeHtml( saveMessage ) }</p>` : '' }
 				${ saveError ? `<p class="kcp-message kcp-message--error">${ escapeHtml( saveError ) }</p>` : '' }
+				${ cartError ? `<p class="kcp-message kcp-message--error">${ escapeHtml( cartError ) }</p>` : '' }
 				${ savedUuid ? `<p class="kcp-hint">ID: <code>${ escapeHtml( savedUuid ) }</code></p>` : '' }
 			</section>
 		`;
@@ -71,6 +81,7 @@ export class SummaryStep {
 		} );
 
 		this.container.querySelector( '#kcp-save-btn' )?.addEventListener( 'click', () => this.save() );
+		this.container.querySelector( '#kcp-cart-btn' )?.addEventListener( 'click', () => this.addToCart() );
 	}
 
 	async save() {
@@ -111,6 +122,44 @@ export class SummaryStep {
 			this.store.setState( {
 				saveError: err.message || this.i18n.error,
 				saving: false,
+			} );
+		}
+	}
+
+	async addToCart() {
+		const state = this.store.getState();
+
+		if ( ! state.savedUuid ) {
+			this.store.setState( {
+				cartError: this.i18n.saveBeforeCart,
+			} );
+			return;
+		}
+
+		this.store.setState( { cartAdding: true, cartError: null } );
+
+		try {
+			await this.save();
+
+			const { savedUuid, saveError } = this.store.getState();
+
+			if ( saveError || ! savedUuid ) {
+				throw new Error( saveError || this.i18n.saveBeforeCart );
+			}
+
+			const { meta } = await this.api.addToCart( savedUuid );
+			const redirect = meta?.redirect;
+
+			if ( redirect ) {
+				window.location.href = redirect;
+				return;
+			}
+
+			this.store.setState( { cartAdding: false } );
+		} catch ( err ) {
+			this.store.setState( {
+				cartError: err.message || this.i18n.error,
+				cartAdding: false,
 			} );
 		}
 	}

@@ -62,12 +62,14 @@ final class Assets {
 			'kcp-configurator',
 			'kcpConfigurator',
 			array(
-				'apiUrl'     => esc_url_raw( rest_url( 'kcp/v1' ) ),
-				'nonce'      => wp_create_nonce( 'wp_rest' ),
-				'isLoggedIn' => is_user_logged_in(),
-				'currency'   => sanitize_text_field( (string) ( $settings['currency'] ?? 'EUR' ) ),
-				'pluginUrl'  => KCP_PLUGIN_URL,
-				'i18n'       => array(
+				'apiUrl'             => esc_url_raw( rest_url( 'kcp/v1' ) ),
+				'nonce'              => wp_create_nonce( 'wp_rest' ),
+				'isLoggedIn'         => is_user_logged_in(),
+				'currency'           => sanitize_text_field( (string) ( $settings['currency'] ?? 'EUR' ) ),
+				'pluginUrl'          => KCP_PLUGIN_URL,
+				'woocommerceActive'  => class_exists( 'WooCommerce' ),
+				'cartUrl'            => function_exists( 'wc_get_cart_url' ) ? esc_url_raw( wc_get_cart_url() ) : '',
+				'i18n'               => array(
 					'loading'           => __( 'Loading…', 'kitchen-configurator-pro' ),
 					'error'             => __( 'Something went wrong. Please try again.', 'kitchen-configurator-pro' ),
 					'save'              => __( 'Save Configuration', 'kitchen-configurator-pro' ),
@@ -104,6 +106,9 @@ final class Assets {
 					'height'              => __( 'Height (mm)', 'kitchen-configurator-pro' ),
 					'depth'               => __( 'Depth (mm)', 'kitchen-configurator-pro' ),
 					'length'              => __( 'Length (mm)', 'kitchen-configurator-pro' ),
+					'addToCart'           => __( 'Add to Cart', 'kitchen-configurator-pro' ),
+					'addingToCart'        => __( 'Adding to cart…', 'kitchen-configurator-pro' ),
+					'saveBeforeCart'      => __( 'Save your configuration before adding to cart.', 'kitchen-configurator-pro' ),
 				),
 			)
 		);

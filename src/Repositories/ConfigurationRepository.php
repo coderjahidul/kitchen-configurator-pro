@@ -56,6 +56,24 @@ final class ConfigurationRepository extends AbstractRepository {
 	}
 
 	/**
+	 * Find raw database row by UUID.
+	 *
+	 * @param string $uuid Configuration UUID.
+	 * @return array<string, mixed>|null
+	 */
+	public function find_row_by_uuid( string $uuid ): ?array {
+		$table = $this->table_name();
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table from trusted helper.
+		$row = $this->db->get_row(
+			$this->db->prepare( "SELECT * FROM {$table} WHERE uuid = %s", sanitize_text_field( $uuid ) ),
+			ARRAY_A
+		);
+
+		return is_array( $row ) ? $row : null;
+	}
+
+	/**
 	 * Find configurations for a logged-in user.
 	 *
 	 * @param int    $user_id User ID.
@@ -139,6 +157,37 @@ final class ConfigurationRepository extends AbstractRepository {
 		}
 
 		return 0;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function update( int $id, array $data ): mixed {
+		$existing = $this->find_row_by_id( $id );
+
+		if ( null === $existing ) {
+			return null;
+		}
+
+		return parent::update( $id, array_merge( $existing, $data ) );
+	}
+
+	/**
+	 * Find raw row by primary key.
+	 *
+	 * @param int $id Configuration ID.
+	 * @return array<string, mixed>|null
+	 */
+	public function find_row_by_id( int $id ): ?array {
+		$table = $this->table_name();
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table from trusted helper.
+		$row = $this->db->get_row(
+			$this->db->prepare( "SELECT * FROM {$table} WHERE id = %d", $id ),
+			ARRAY_A
+		);
+
+		return is_array( $row ) ? $row : null;
 	}
 
 	/**

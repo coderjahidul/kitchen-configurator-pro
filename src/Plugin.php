@@ -13,6 +13,7 @@ use KitchenConfiguratorPro\Admin\AdminServiceProvider;
 use KitchenConfiguratorPro\Api\ApiServiceProvider;
 use KitchenConfiguratorPro\CoreServiceProvider;
 use KitchenConfiguratorPro\Frontend\FrontendServiceProvider;
+use KitchenConfiguratorPro\Integration\WooCommerce\WooCommerceServiceProvider;
 use KitchenConfiguratorPro\Database\Migrator;
 
 /**
@@ -61,6 +62,13 @@ final class Plugin {
 	 * @var bool
 	 */
 	private bool $admin_registered = false;
+
+	/**
+	 * Whether WooCommerce services have been registered.
+	 *
+	 * @var bool
+	 */
+	private bool $woocommerce_registered = false;
 
 	/**
 	 * Private constructor.
@@ -160,9 +168,27 @@ final class Plugin {
 	 */
 	public function on_plugins_loaded(): void {
 		$this->maybe_upgrade_database();
+		$this->register_woocommerce();
 		$this->register_api();
 		$this->register_frontend();
 		$this->register_admin();
+	}
+
+	/**
+	 * Register WooCommerce integration when WooCommerce is active.
+	 *
+	 * @return void
+	 */
+	private function register_woocommerce(): void {
+		if ( $this->woocommerce_registered || ! class_exists( 'WooCommerce' ) ) {
+			return;
+		}
+
+		$this->woocommerce_registered = true;
+
+		$provider = new WooCommerceServiceProvider( $this->container );
+		$provider->register();
+		$provider->boot();
 	}
 
 	/**

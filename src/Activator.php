@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace KitchenConfiguratorPro;
 
 use KitchenConfiguratorPro\Database\Migrator;
+use KitchenConfiguratorPro\Integration\WooCommerce\ProductManager;
 use KitchenConfiguratorPro\Security\CapabilityManager;
 
 /**
@@ -27,6 +28,7 @@ final class Activator {
 		self::run_migrations();
 		self::register_capabilities();
 		self::set_default_options();
+		self::ensure_woocommerce_product();
 		flush_rewrite_rules();
 	}
 
@@ -93,6 +95,26 @@ final class Activator {
 
 		if ( false === get_option( 'kcp_catalog_cache_version', false ) ) {
 			add_option( 'kcp_catalog_cache_version', 1, '', false );
+		}
+	}
+
+	/**
+	 * Create the WooCommerce container product on activation when WooCommerce is available.
+	 *
+	 * @return void
+	 */
+	private static function ensure_woocommerce_product(): void {
+		if ( ! class_exists( 'WooCommerce' ) ) {
+			return;
+		}
+
+		try {
+			( new ProductManager() )->ensure_container_product();
+		} catch ( \Throwable $exception ) {
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+				error_log( 'KCP container product creation failed: ' . $exception->getMessage() );
+			}
 		}
 	}
 }

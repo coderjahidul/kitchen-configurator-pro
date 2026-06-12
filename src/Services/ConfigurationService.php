@@ -224,6 +224,106 @@ final class ConfigurationService {
 	}
 
 	/**
+	 * Recalculate pricing and lock configuration for cart/checkout.
+	 *
+	 * @param string      $uuid       Configuration UUID.
+	 * @param int|null    $user_id    Requesting user ID.
+	 * @param string|null $session_id Guest session ID.
+	 * @return Configuration
+	 *
+	 * @throws NotFoundException When configuration is not found.
+	 * @throws ValidationException When configuration cannot be purchased.
+	 */
+	public function prepare_for_cart( string $uuid, ?int $user_id = null, ?string $session_id = null ): Configuration {
+		$existing = $this->find_accessible( $uuid, $user_id, $session_id );
+
+		if ( null === $existing ) {
+			throw new NotFoundException( __( 'Configuration not found.', 'kitchen-configurator-pro' ) );
+		}
+
+		if ( in_array( $existing->status, array( 'ordered', 'archived' ), true ) ) {
+			throw new ValidationException(
+				array( __( 'This configuration has already been ordered and cannot be added to cart again.', 'kitchen-configurator-pro' ) )
+			);
+		}
+
+		$decoded = json_decode( $existing->configuration_json, true );
+		$input   = ConfigurationInput::from_array( is_array( $decoded ) ? $decoded : array() );
+		$snapshot = $this->pricing->calculate( $input );
+
+		$updated = $this->configurations->update(
+			$existing->id,
+			array(
+				'pricing_snapshot_json' => $snapshot->to_json(),
+				'total_price'           => $snapshot->total->amount,
+				'price_hash'            => $snapshot->price_hash->to_string(),
+				'status'                => 'saved',
+			)
+		);
+
+		if ( null === $updated ) {
+			throw new \RuntimeException( __( 'Failed to prepare configuration for cart.', 'kitchen-configurator-pro' ) );
+		}
+
+		return $updated;
+	}
+
+	/**
+	 * Attach WooCommerce cart item key to configuration.
+	 *
+	 * @param string $uuid          Configuration UUID.
+	 * @param string $cart_item_key Cart item key.
+	 * @return void
+	 */
+	public function attach_cart_item( string $uuid, string $cart_item_key ): void {
+		$config = $this->configurations->find_by_uuid( $uuid );
+
+		if ( null === $config ) {
+			return;
+		}
+
+		$this->configurations->update(
+			$config->id,
+			array(
+				'wc_cart_item_key' => $cart_item_key,
+			)
+		);
+	}
+
+	/**
+	 * Mark configuration as ordered.
+	 *
+	 * @param string $uuid     Configuration UUID.
+	 * @param int    $order_id WooCommerce order ID.
+	 * @return void
+	 */
+	public function mark_ordered( string $uuid, int $order_id ): void {
+		$config = $this->configurations->find_by_uuid( $uuid );
+
+		if ( null === $config ) {
+			return;
+		}
+
+		$this->configurations->update(
+			$config->id,
+			array(
+				'status'      => 'ordered',
+				'wc_order_id' => $order_id,
+			)
+		);
+	}
+
+	/**
+	 * Get raw database row for a configuration UUID.
+	 *
+	 * @param string $uuid Configuration UUID.
+	 * @return array<string, mixed>|null
+	 */
+	public function get_row_by_uuid( string $uuid ): ?array {
+		return $this->configurations->find_row_by_uuid( $uuid );
+	}
+
+	/**
 	 * Parse and sanitize raw request data into a configuration input DTO.
 	 *
 	 * @param array<string, mixed> $data Raw input.

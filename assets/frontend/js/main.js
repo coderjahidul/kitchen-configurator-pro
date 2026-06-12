@@ -36,6 +36,8 @@ document.addEventListener( 'DOMContentLoaded', () => {
 		saving: false,
 		saveMessage: null,
 		saveError: null,
+		cartAdding: false,
+		cartError: null,
 	} );
 
 	const app = new App( root, store, api, boot );

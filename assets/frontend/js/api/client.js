@@ -147,9 +147,10 @@ export class KcpApi {
 	 * @param {string} uuid Configuration UUID.
 	 * @returns {Promise<object>}
 	 */
-	deleteConfiguration( uuid ) {
-		return this.request( `/configurations/${ uuid }`, {
-			method: 'DELETE',
+	addToCart( uuid ) {
+		return this.request( '/cart/add', {
+			method: 'POST',
+			body: JSON.stringify( { uuid } ),
 		} );
 	}
 }
