@@ -13,6 +13,7 @@ use KitchenConfiguratorPro\Api\ApiResponse;
 use KitchenConfiguratorPro\Api\RestController;
 use KitchenConfiguratorPro\Domain\Exceptions\NotFoundException;
 use KitchenConfiguratorPro\Security\RestAuth;
+use KitchenConfiguratorPro\Security\RestInputValidator;
 use KitchenConfiguratorPro\Services\ConfigurationService;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -220,11 +221,13 @@ final class ConfigurationController extends RestController {
 				'type'              => 'integer',
 				'default'           => 1,
 				'sanitize_callback' => 'absint',
+				'validate_callback' => array( RestInputValidator::class, 'validate_page' ),
 			),
 			'per_page' => array(
 				'type'              => 'integer',
 				'default'           => 20,
 				'sanitize_callback' => 'absint',
+				'validate_callback' => array( RestInputValidator::class, 'validate_per_page' ),
 			),
 		);
 	}
@@ -236,23 +239,6 @@ final class ConfigurationController extends RestController {
 	 * @return array<string, array<string, mixed>>
 	 */
 	private function configuration_args( bool $require_layout = true ): array {
-		return array(
-			'layout_id' => array(
-				'type'              => 'integer',
-				'required'          => $require_layout,
-				'sanitize_callback' => 'absint',
-			),
-			'title'     => array(
-				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
-			),
-			'cabinets'  => array(
-				'type'     => 'array',
-				'required' => $require_layout,
-			),
-			'global_options' => array(
-				'type' => 'array',
-			),
-		);
+		return RestInputValidator::configuration_args( $require_layout );
 	}
 }

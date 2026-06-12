@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace KitchenConfiguratorPro\Integration\WooCommerce;
 
 use KitchenConfiguratorPro\Domain\DTO\ConfigurationInput;
+use KitchenConfiguratorPro\Security\SecurityLogger;
 use KitchenConfiguratorPro\Services\Pricing\PricingEngine;
 
 /**
@@ -68,6 +69,13 @@ final class CheckoutHandler {
 			}
 
 			if ( ! $this->verify_cart_item( $cart_item ) ) {
+				SecurityLogger::price_integrity_failed(
+					'checkout_validation',
+					array(
+						'uuid' => (string) ( $cart_item[ CartHandler::META_UUID ] ?? '' ),
+					)
+				);
+
 				$errors->add(
 					'kcp_price_integrity',
 					__( 'Your kitchen configuration price is no longer valid. Please return to the configurator and update your design.', 'kitchen-configurator-pro' )
@@ -90,6 +98,13 @@ final class CheckoutHandler {
 			}
 
 			if ( ! $this->verify_cart_item( $cart_item ) ) {
+				SecurityLogger::price_integrity_failed(
+					'checkout_process',
+					array(
+						'uuid' => (string) ( $cart_item[ CartHandler::META_UUID ] ?? '' ),
+					)
+				);
+
 				wc_add_notice(
 					__( 'Your kitchen configuration price is no longer valid. Please return to the configurator and update your design.', 'kitchen-configurator-pro' ),
 					'error'

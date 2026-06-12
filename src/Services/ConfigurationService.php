@@ -14,6 +14,7 @@ use KitchenConfiguratorPro\Domain\Entities\Configuration;
 use KitchenConfiguratorPro\Domain\Exceptions\NotFoundException;
 use KitchenConfiguratorPro\Domain\Exceptions\ValidationException;
 use KitchenConfiguratorPro\Repositories\ConfigurationRepository;
+use KitchenConfiguratorPro\Security\ConfigurationSchemaValidator;
 use KitchenConfiguratorPro\Security\RestAuth;
 use KitchenConfiguratorPro\Services\Pricing\PricingEngine;
 use KitchenConfiguratorPro\Support\Arr;
@@ -31,12 +32,16 @@ final class ConfigurationService {
 	private const ALLOWED_STATUSES = array( 'draft', 'saved', 'quoted', 'ordered', 'archived' );
 
 	/**
-	 * @param ConfigurationRepository $configurations Configuration repository.
-	 * @param PricingEngine           $pricing        Pricing engine.
+	 * @param ConfigurationRepository       $configurations Configuration repository.
+	 * @param PricingEngine                 $pricing        Pricing engine.
+	 * @param ConfigurationSchemaValidator  $schema         Payload schema validator.
+	 * @param ConfigurationAuditService     $audit          Audit trail service.
 	 */
 	public function __construct(
 		private readonly ConfigurationRepository $configurations,
-		private readonly PricingEngine $pricing
+		private readonly PricingEngine $pricing,
+		private readonly ConfigurationSchemaValidator $schema,
+		private readonly ConfigurationAuditService $audit
 	) {
 	}
 
@@ -74,6 +79,13 @@ final class ConfigurationService {
 		if ( null === $entity ) {
 			throw new \RuntimeException( __( 'Failed to save configuration.', 'kitchen-configurator-pro' ) );
 		}
+
+		$this->audit->record(
+			$entity->id,
+			'created',
+			$config_data['configuration_json'],
+			$config_data['pricing_snapshot_json']
+		);
 
 		return $entity;
 	}
@@ -122,6 +134,13 @@ final class ConfigurationService {
 		if ( null === $updated ) {
 			throw new \RuntimeException( __( 'Failed to update configuration.', 'kitchen-configurator-pro' ) );
 		}
+
+		$this->audit->record(
+			$updated->id,
+			'updated',
+			wp_json_encode( $input->to_array(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) ?: '{}',
+			$snapshot->to_json()
+		);
 
 		return $updated;
 	}
@@ -220,7 +239,18 @@ final class ConfigurationService {
 			);
 		}
 
-		return $this->configurations->delete( $config->id );
+		$deleted = $this->configurations->delete( $config->id );
+
+		if ( $deleted ) {
+			$this->audit->record(
+				$config->id,
+				'deleted',
+				$config->configuration_json,
+				$config->pricing_snapshot_json
+			);
+		}
+
+		return $deleted;
 	}
 
 	/**
@@ -264,6 +294,13 @@ final class ConfigurationService {
 		if ( null === $updated ) {
 			throw new \RuntimeException( __( 'Failed to prepare configuration for cart.', 'kitchen-configurator-pro' ) );
 		}
+
+		$this->audit->record(
+			$updated->id,
+			'cart_prepared',
+			$existing->configuration_json,
+			$snapshot->to_json()
+		);
 
 		return $updated;
 	}
@@ -310,6 +347,13 @@ final class ConfigurationService {
 				'status'      => 'ordered',
 				'wc_order_id' => $order_id,
 			)
+		);
+
+		$this->audit->record(
+			$config->id,
+			'ordered',
+			$config->configuration_json,
+			$config->pricing_snapshot_json
 		);
 	}
 
@@ -364,6 +408,8 @@ final class ConfigurationService {
 	 * @return ConfigurationInput
 	 */
 	private function sanitize_input( array $data, ?Configuration $existing = null ): ConfigurationInput {
+		$data = $this->schema->validate_and_strip( $data );
+
 		$existing_config = array();
 
 		if ( null !== $existing ) {

@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace KitchenConfiguratorPro\Integration\WooCommerce;
 
+use KitchenConfiguratorPro\Security\SecurityLogger;
+
 /**
  * Applies KCP pricing and displays configuration data in the cart.
  */
@@ -26,15 +28,70 @@ final class CartHandler {
 	public const META_UNIQUE   = 'kcp_unique_key';
 
 	/**
+	 * @param ProductManager   $products Container product manager.
+	 * @param CheckoutHandler  $checkout Checkout integrity validator.
+	 */
+	public function __construct(
+		private readonly ProductManager $products,
+		private readonly CheckoutHandler $checkout
+	) {
+	}
+
+	/**
 	 * Register WooCommerce cart hooks.
 	 *
 	 * @return void
 	 */
 	public function register(): void {
+		add_filter( 'woocommerce_add_to_cart_validation', array( $this, 'validate_add_to_cart' ), 10, 6 );
 		add_action( 'woocommerce_before_calculate_totals', array( $this, 'set_cart_item_prices' ), 99 );
 		add_filter( 'woocommerce_get_item_data', array( $this, 'display_cart_item_data' ), 10, 2 );
 		add_filter( 'woocommerce_cart_item_name', array( $this, 'filter_cart_item_name' ), 10, 3 );
 		add_filter( 'woocommerce_cart_item_price', array( $this, 'filter_cart_item_price' ), 10, 3 );
+	}
+
+	/**
+	 * Block direct add-to-cart of the container product without KCP metadata.
+	 *
+	 * @param bool                 $passed         Validation result.
+	 * @param int                  $product_id     Product ID.
+	 * @param int                  $quantity       Quantity.
+	 * @param int                  $variation_id   Variation ID.
+	 * @param array<string, mixed> $variations     Variation attributes.
+	 * @param array<string, mixed> $cart_item_data Cart item metadata.
+	 * @return bool
+	 */
+	public function validate_add_to_cart(
+		bool $passed,
+		int $product_id,
+		int $quantity,
+		int $variation_id = 0,
+		array $variations = array(),
+		array $cart_item_data = array()
+	): bool {
+		unset( $quantity, $variation_id, $variations );
+
+		if ( ! $passed || ! $this->products->is_container_product( $product_id ) ) {
+			return $passed;
+		}
+
+		if ( ! empty( $cart_item_data[ self::META_UUID ] ) && ! empty( $cart_item_data[ self::META_HASH ] ) ) {
+			return true;
+		}
+
+		SecurityLogger::log(
+			'wc_unauthorized_add_to_cart',
+			'Blocked direct add-to-cart of KCP container product.',
+			array( 'product_id' => $product_id ),
+			SecurityLogger::LEVEL_WARNING
+		);
+
+		wc_add_notice(
+			__( 'This product cannot be added to the cart directly.', 'kitchen-configurator-pro' ),
+			'error'
+		);
+
+		return false;
 	}
 
 	/**
@@ -48,8 +105,24 @@ final class CartHandler {
 			return;
 		}
 
-		foreach ( $cart->get_cart() as $cart_item ) {
-			if ( empty( $cart_item[ self::META_TOTAL ] ) || ! isset( $cart_item['data'] ) ) {
+		foreach ( $cart->get_cart() as $cart_key => $cart_item ) {
+			if ( ! self::is_kcp_cart_item( $cart_item ) || ! isset( $cart_item['data'] ) ) {
+				continue;
+			}
+
+			if ( ! $this->checkout->verify_cart_item( $cart_item ) ) {
+				SecurityLogger::price_integrity_failed(
+					'cart',
+					array(
+						'uuid' => (string) ( $cart_item[ self::META_UUID ] ?? '' ),
+					)
+				);
+
+				$cart->remove_cart_item( $cart_key );
+				wc_add_notice(
+					__( 'A kitchen configuration in your cart is no longer valid and was removed. Please reconfigure and try again.', 'kitchen-configurator-pro' ),
+					'error'
+				);
 				continue;
 			}
 
@@ -143,6 +216,8 @@ final class CartHandler {
 	 * @return bool
 	 */
 	public static function is_kcp_cart_item( array $cart_item ): bool {
-		return ! empty( $cart_item[ self::META_UUID ] );
+		return ! empty( $cart_item[ self::META_UUID ] )
+			&& ! empty( $cart_item[ self::META_HASH ] )
+			&& ! empty( $cart_item[ self::META_CONFIG ] );
 	}
 }

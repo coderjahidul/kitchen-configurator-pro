@@ -12,7 +12,10 @@ namespace KitchenConfiguratorPro\Api\Controllers;
 use KitchenConfiguratorPro\Api\ApiResponse;
 use KitchenConfiguratorPro\Api\RestController;
 use KitchenConfiguratorPro\Domain\Exceptions\NotFoundException;
+use KitchenConfiguratorPro\Security\RateLimiter;
 use KitchenConfiguratorPro\Security\RestAuth;
+use KitchenConfiguratorPro\Security\RestInputValidator;
+use KitchenConfiguratorPro\Security\SecurityLogger;
 use KitchenConfiguratorPro\Services\CartIntegrationService;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -21,6 +24,16 @@ use WP_REST_Response;
  * POST /kcp/v1/cart/add
  */
 final class CartController extends RestController {
+
+	/**
+	 * Maximum cart add requests per client per minute.
+	 */
+	private const RATE_LIMIT_MAX = 20;
+
+	/**
+	 * Rate limit window in seconds.
+	 */
+	private const RATE_LIMIT_WINDOW = 60;
 
 	/**
 	 * {@inheritDoc}
@@ -38,6 +51,7 @@ final class CartController extends RestController {
 						'type'              => 'string',
 						'required'          => true,
 						'sanitize_callback' => 'sanitize_text_field',
+						'validate_callback' => array( RestInputValidator::class, 'validate_uuid' ),
 					),
 				),
 			)
@@ -59,15 +73,21 @@ final class CartController extends RestController {
 			);
 		}
 
-		$uuid = (string) $request->get_param( 'uuid' );
+		/** @var RateLimiter $limiter */
+		$limiter = $this->container->get( RateLimiter::class );
+		$key     = RateLimiter::client_key( 'cart_add' );
 
-		if ( ! RestAuth::is_valid_uuid( $uuid ) ) {
+		if ( ! $limiter->attempt( $key, self::RATE_LIMIT_MAX, self::RATE_LIMIT_WINDOW ) ) {
+			SecurityLogger::rate_limit_exceeded( 'cart_add' );
+
 			return ApiResponse::error(
-				'kcp_invalid_uuid',
-				__( 'Invalid configuration UUID.', 'kitchen-configurator-pro' ),
-				400
+				'kcp_rate_limit_exceeded',
+				__( 'Too many cart requests. Please wait and try again.', 'kitchen-configurator-pro' ),
+				429
 			);
 		}
+
+		$uuid = (string) $request->get_param( 'uuid' );
 
 		try {
 			/** @var CartIntegrationService $cart_service */

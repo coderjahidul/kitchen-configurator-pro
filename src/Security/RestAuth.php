@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace KitchenConfiguratorPro\Security;
 
 use WP_REST_Request;
+use WP_Error;
 
 /**
  * Handles REST permission checks for KCP endpoints.
@@ -41,36 +42,76 @@ final class RestAuth {
 	 * Logged-in users must send X-WP-Nonce. Guests must send X-KCP-Session-Id.
 	 *
 	 * @param WP_REST_Request $request REST request.
-	 * @return bool
+	 * @return bool|WP_Error
 	 */
-	public static function require_mutation_auth( WP_REST_Request $request ): bool {
+	public static function require_mutation_auth( WP_REST_Request $request ): bool|WP_Error {
 		if ( current_user_can( CapabilityManager::CAP_MANAGE ) ) {
 			return true;
 		}
 
 		if ( is_user_logged_in() ) {
-			return self::verify_wp_rest_nonce( $request );
+			if ( self::verify_wp_rest_nonce( $request ) ) {
+				return true;
+			}
+
+			SecurityLogger::auth_failed( 'invalid_wp_rest_nonce' );
+
+			return new WP_Error(
+				'kcp_unauthorized',
+				__( 'Authentication required.', 'kitchen-configurator-pro' ),
+				array( 'status' => 401 )
+			);
 		}
 
-		return self::has_valid_guest_session( $request );
+		if ( self::has_valid_guest_session( $request ) ) {
+			return true;
+		}
+
+		SecurityLogger::auth_failed( 'missing_guest_session' );
+
+		return new WP_Error(
+			'kcp_unauthorized',
+			__( 'A valid guest session is required.', 'kitchen-configurator-pro' ),
+			array( 'status' => 401 )
+		);
 	}
 
 	/**
 	 * Require authenticated user or guest session for read access to private resources.
 	 *
 	 * @param WP_REST_Request $request REST request.
-	 * @return bool
+	 * @return bool|WP_Error
 	 */
-	public static function require_authenticated( WP_REST_Request $request ): bool {
+	public static function require_authenticated( WP_REST_Request $request ): bool|WP_Error {
 		if ( current_user_can( CapabilityManager::CAP_MANAGE ) ) {
 			return true;
 		}
 
 		if ( is_user_logged_in() ) {
-			return self::verify_wp_rest_nonce( $request );
+			if ( self::verify_wp_rest_nonce( $request ) ) {
+				return true;
+			}
+
+			SecurityLogger::auth_failed( 'invalid_wp_rest_nonce_read' );
+
+			return new WP_Error(
+				'kcp_unauthorized',
+				__( 'Authentication required.', 'kitchen-configurator-pro' ),
+				array( 'status' => 401 )
+			);
 		}
 
-		return self::has_valid_guest_session( $request );
+		if ( self::has_valid_guest_session( $request ) ) {
+			return true;
+		}
+
+		SecurityLogger::auth_failed( 'missing_guest_session_read' );
+
+		return new WP_Error(
+			'kcp_unauthorized',
+			__( 'A valid guest session is required.', 'kitchen-configurator-pro' ),
+			array( 'status' => 401 )
+		);
 	}
 
 	/**

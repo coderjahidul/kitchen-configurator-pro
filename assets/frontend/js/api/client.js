@@ -13,6 +13,24 @@ export class KcpApi {
 		this.nonce = config.nonce || '';
 		this.isLoggedIn = Boolean( config.isLoggedIn );
 		this.sessionId = localStorage.getItem( SESSION_KEY ) || '';
+
+		if ( ! this.isLoggedIn && ! this.sessionId ) {
+			this.sessionId = this.generateSessionId();
+			this.setSessionId( this.sessionId );
+		}
+	}
+
+	/**
+	 * Generate a client-side guest session ID.
+	 *
+	 * @returns {string}
+	 */
+	generateSessionId() {
+		if ( typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ) {
+			return crypto.randomUUID();
+		}
+
+		return `kcp-${ Date.now() }-${ Math.random().toString( 36 ).slice( 2, 14 ) }`;
 	}
 
 	/**

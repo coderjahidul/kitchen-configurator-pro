@@ -47,15 +47,20 @@ final class WooCommerceServiceProvider {
 		);
 
 		$this->container->singleton(
-			CartHandler::class,
-			static fn () => new CartHandler()
-		);
-
-		$this->container->singleton(
 			CheckoutHandler::class,
 			function () {
 				return new CheckoutHandler(
 					$this->container->get( PricingEngine::class )
+				);
+			}
+		);
+
+		$this->container->singleton(
+			CartHandler::class,
+			function () {
+				return new CartHandler(
+					$this->container->get( ProductManager::class ),
+					$this->container->get( CheckoutHandler::class )
 				);
 			}
 		);

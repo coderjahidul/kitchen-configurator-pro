@@ -34,8 +34,10 @@ use KitchenConfiguratorPro\Services\Pricing\ConditionEvaluator;
 use KitchenConfiguratorPro\Services\Pricing\PriceHashGenerator;
 use KitchenConfiguratorPro\Services\Pricing\PricingEngine;
 use KitchenConfiguratorPro\Services\CatalogService;
+use KitchenConfiguratorPro\Services\ConfigurationAuditService;
 use KitchenConfiguratorPro\Services\ConfigurationService;
 use KitchenConfiguratorPro\Services\ValidationService;
+use KitchenConfiguratorPro\Security\SecurityServiceProvider;
 
 /**
  * Registers repositories and pricing services for the entire plugin.
@@ -192,7 +194,9 @@ final class CoreServiceProvider {
 			function () {
 				return new ConfigurationService(
 					$this->container->get( ConfigurationRepository::class ),
-					$this->container->get( PricingEngine::class )
+					$this->container->get( PricingEngine::class ),
+					$this->container->get( ConfigurationSchemaValidator::class ),
+					$this->container->get( ConfigurationAuditService::class )
 				);
 			}
 		);

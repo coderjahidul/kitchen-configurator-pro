@@ -12,6 +12,7 @@ namespace KitchenConfiguratorPro\Admin;
 use KitchenConfiguratorPro\Container;
 use KitchenConfiguratorPro\Contracts\RepositoryInterface;
 use KitchenConfiguratorPro\Security\CapabilityManager;
+use KitchenConfiguratorPro\Security\SecurityLogger;
 use KitchenConfiguratorPro\Support\Arr;
 use KitchenConfiguratorPro\Support\Helpers;
 
@@ -109,9 +110,7 @@ abstract class AbstractCrudPage {
 	 * @return void
 	 */
 	public function render(): void {
-		if ( ! current_user_can( CapabilityManager::CAP_MANAGE ) ) {
-			wp_die( esc_html__( 'You do not have permission to access this page.', 'kitchen-configurator-pro' ) );
-		}
+		CapabilityManager::require_manage();
 
 		$this->handle_actions();
 
@@ -149,6 +148,12 @@ abstract class AbstractCrudPage {
 		$nonce        = isset( $_POST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['_wpnonce'] ) ) : '';
 
 		if ( ! wp_verify_nonce( $nonce, $nonce_action ) ) {
+			SecurityLogger::log(
+				'admin_nonce_failed',
+				'Admin form nonce verification failed.',
+				array( 'page' => $this->slug() ),
+				SecurityLogger::LEVEL_WARNING
+			);
 			$this->add_notice( 'error', __( 'Security check failed.', 'kitchen-configurator-pro' ) );
 			return;
 		}
@@ -280,10 +285,51 @@ abstract class AbstractCrudPage {
 
 			$data[ $key ] = is_array( $value )
 				? array_map( 'sanitize_text_field', $value )
-				: $value;
+				: $this->sanitize_field_value( $value, $field );
 		}
 
 		return $data;
+	}
+
+	/**
+	 * Sanitize a single admin form field value by type.
+	 *
+	 * @param mixed                $value Raw value.
+	 * @param array<string, mixed> $field Field definition.
+	 * @return mixed
+	 */
+	protected function sanitize_field_value( mixed $value, array $field ): mixed {
+		$type = (string) ( $field['type'] ?? 'text' );
+
+		return match ( $type ) {
+			'textarea'        => sanitize_textarea_field( (string) $value ),
+			'number'          => is_numeric( $value ) ? $value : 0,
+			'url'             => esc_url_raw( (string) $value ),
+			'json'            => $this->sanitize_json_field( (string) $value ),
+			'datetime-local'  => sanitize_text_field( (string) $value ),
+			'select'          => sanitize_text_field( (string) $value ),
+			default           => sanitize_text_field( (string) $value ),
+		};
+	}
+
+	/**
+	 * Validate and normalize JSON admin field input.
+	 *
+	 * @param string $value Raw JSON string.
+	 * @return string
+	 */
+	protected function sanitize_json_field( string $value ): string {
+		if ( '' === trim( $value ) ) {
+			return '{}';
+		}
+
+		$decoded = json_decode( $value, true );
+
+		if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $decoded ) ) {
+			return '{}';
+		}
+
+		return wp_json_encode( $decoded, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) ?: '{}';
 	}
 
 	/**

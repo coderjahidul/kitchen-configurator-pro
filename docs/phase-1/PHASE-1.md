@@ -113,7 +113,7 @@ Server-generated on every calculate; includes `price_hash` for cart/checkout int
 | 5 — REST API | Pending |
 | 6 — Frontend Configurator | Pending |
 | 7 — WooCommerce Integration | ✅ Complete |
-| 8 — Security & Validation | Pending |
+| 8 — Security & Validation | ✅ Complete |
 | 9 — Testing | Pending |
 | 10 — Deployment | Pending |
 

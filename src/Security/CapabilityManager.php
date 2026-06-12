@@ -31,4 +31,21 @@ final class CapabilityManager {
 			$role->add_cap( self::CAP_MANAGE );
 		}
 	}
+
+	/**
+	 * Assert current user can manage KCP admin features.
+	 *
+	 * @return void
+	 */
+	public static function require_manage(): void {
+		if ( current_user_can( self::CAP_MANAGE ) ) {
+			return;
+		}
+
+		wp_die(
+			esc_html__( 'You do not have permission to access this page.', 'kitchen-configurator-pro' ),
+			esc_html__( 'Permission Denied', 'kitchen-configurator-pro' ),
+			array( 'response' => 403 )
+		);
+	}
 }

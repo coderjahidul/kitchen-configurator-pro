@@ -15,6 +15,7 @@ use KitchenConfiguratorPro\CoreServiceProvider;
 use KitchenConfiguratorPro\Frontend\FrontendServiceProvider;
 use KitchenConfiguratorPro\Integration\WooCommerce\WooCommerceServiceProvider;
 use KitchenConfiguratorPro\Database\Migrator;
+use KitchenConfiguratorPro\Security\SecurityServiceProvider;
 
 /**
  * Plugin singleton.
@@ -132,6 +133,9 @@ final class Plugin {
 
 		$core = new CoreServiceProvider( $this->container );
 		$core->register();
+
+		$security = new SecurityServiceProvider( $this->container );
+		$security->register();
 	}
 
 	/**
