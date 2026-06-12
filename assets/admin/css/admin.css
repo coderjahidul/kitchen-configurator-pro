@@ -1,0 +1,78 @@
+.kcp-admin .kcp-dashboard-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+	gap: 16px;
+	margin: 20px 0 30px;
+}
+
+.kcp-admin .kcp-card {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	padding: 16px;
+}
+
+.kcp-admin .kcp-card h3 {
+	margin: 0 0 8px;
+	font-size: 13px;
+	font-weight: 600;
+	color: #646970;
+	text-transform: uppercase;
+}
+
+.kcp-admin .kcp-stat {
+	margin: 0;
+	font-size: 28px;
+	font-weight: 600;
+	line-height: 1.2;
+}
+
+.kcp-admin .kcp-status {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 3px;
+	font-size: 12px;
+}
+
+.kcp-admin .kcp-status--active {
+	background: #d5f5e3;
+	color: #1e4620;
+}
+
+.kcp-admin .kcp-status--inactive {
+	background: #f0f0f1;
+	color: #646970;
+}
+
+.kcp-admin .kcp-color-swatch {
+	display: inline-block;
+	width: 16px;
+	height: 16px;
+	border: 1px solid #c3c4c7;
+	border-radius: 2px;
+	vertical-align: middle;
+	margin-right: 6px;
+}
+
+.kcp-admin .kcp-json-view {
+	background: #1d2327;
+	color: #f0f0f1;
+	padding: 16px;
+	border-radius: 4px;
+	overflow-x: auto;
+	max-height: 480px;
+	font-size: 12px;
+	line-height: 1.5;
+}
+
+.kcp-admin .kcp-json-field {
+	font-family: Consolas, Monaco, monospace;
+}
+
+.kcp-admin .kcp-actions a.kcp-delete-link {
+	color: #b32d2e;
+}
+
+.kcp-admin .required {
+	color: #d63638;
+}
