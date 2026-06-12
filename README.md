@@ -19,7 +19,7 @@ Production-ready WordPress plugin for custom kitchen cabinet configuration with 
 | 3 | ✅ Complete | Admin CRUD |
 | 4 | ✅ Complete | Pricing engine |
 | 5 | ✅ Complete | REST API |
-| 6 | Pending | Frontend configurator |
+| 6 | ✅ Complete | Frontend configurator |
 | 7 | Pending | WooCommerce integration |
 | 8 | Pending | Security & validation |
 | 9 | Pending | Testing |
@@ -37,7 +37,22 @@ Production-ready WordPress plugin for custom kitchen cabinet configuration with 
 - [Phase 3 — Admin CRUD](docs/phase-3/PHASE-3.md)
 - [Phase 4 — Pricing Engine](docs/phase-4/PHASE-4.md)
 - [Phase 5 — REST API](docs/phase-5/PHASE-5.md)
+- [Phase 6 — Frontend Configurator](docs/phase-6/PHASE-6.md)
 - [SQL Reference](database/schema/schema.sql)
+
+## Usage
+
+Add the configurator to any page:
+
+```
+[kitchen_configurator]
+```
+
+Load a saved configuration:
+
+```
+[kitchen_configurator uuid="your-uuid-here"]
+```
 
 ## License
 

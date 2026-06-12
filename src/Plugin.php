@@ -12,6 +12,7 @@ namespace KitchenConfiguratorPro;
 use KitchenConfiguratorPro\Admin\AdminServiceProvider;
 use KitchenConfiguratorPro\Api\ApiServiceProvider;
 use KitchenConfiguratorPro\CoreServiceProvider;
+use KitchenConfiguratorPro\Frontend\FrontendServiceProvider;
 use KitchenConfiguratorPro\Database\Migrator;
 
 /**
@@ -46,6 +47,13 @@ final class Plugin {
 	 * @var bool
 	 */
 	private bool $api_registered = false;
+
+	/**
+	 * Whether frontend services have been registered.
+	 *
+	 * @var bool
+	 */
+	private bool $frontend_registered = false;
 
 	/**
 	 * Whether admin services have been registered.
@@ -153,7 +161,25 @@ final class Plugin {
 	public function on_plugins_loaded(): void {
 		$this->maybe_upgrade_database();
 		$this->register_api();
+		$this->register_frontend();
 		$this->register_admin();
+	}
+
+	/**
+	 * Register frontend configurator layer.
+	 *
+	 * @return void
+	 */
+	private function register_frontend(): void {
+		if ( $this->frontend_registered ) {
+			return;
+		}
+
+		$this->frontend_registered = true;
+
+		$provider = new FrontendServiceProvider( $this->container );
+		$provider->register();
+		$provider->boot();
 	}
 
 	/**

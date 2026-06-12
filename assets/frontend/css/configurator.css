@@ -1,0 +1,602 @@
+/**
+ * Kitchen Configurator Pro — frontend styles
+ */
+
+.kcp-configurator {
+	--kcp-primary: #1a5f4a;
+	--kcp-primary-dark: #134636;
+	--kcp-accent: #c8a96e;
+	--kcp-bg: #f7f7f5;
+	--kcp-surface: #ffffff;
+	--kcp-border: #e2e2dc;
+	--kcp-text: #1c1c1a;
+	--kcp-muted: #6b6b63;
+	--kcp-danger: #b42318;
+	--kcp-radius: 10px;
+	--kcp-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+	font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+	color: var(--kcp-text);
+	line-height: 1.5;
+}
+
+.kcp-configurator *,
+.kcp-configurator *::before,
+.kcp-configurator *::after {
+	box-sizing: border-box;
+}
+
+.kcp-configurator__loader {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 2rem;
+	color: var(--kcp-muted);
+}
+
+.kcp-configurator__spinner {
+	width: 1.25rem;
+	height: 1.25rem;
+	border: 2px solid var(--kcp-border);
+	border-top-color: var(--kcp-primary);
+	border-radius: 50%;
+	animation: kcp-spin 0.8s linear infinite;
+}
+
+@keyframes kcp-spin {
+	to { transform: rotate(360deg); }
+}
+
+/* App layout */
+.kcp-app {
+	display: grid;
+	grid-template-columns: 220px 1fr 280px;
+	gap: 1.5rem;
+	min-height: 560px;
+	background: var(--kcp-bg);
+	border: 1px solid var(--kcp-border);
+	border-radius: calc(var(--kcp-radius) + 4px);
+	padding: 1.5rem;
+}
+
+.kcp-app__sidebar,
+.kcp-app__price {
+	background: var(--kcp-surface);
+	border-radius: var(--kcp-radius);
+	box-shadow: var(--kcp-shadow);
+	padding: 1rem;
+}
+
+.kcp-app__main {
+	display: flex;
+	flex-direction: column;
+	background: var(--kcp-surface);
+	border-radius: var(--kcp-radius);
+	box-shadow: var(--kcp-shadow);
+	overflow: hidden;
+}
+
+.kcp-app__content {
+	flex: 1;
+	padding: 1.5rem;
+	overflow-y: auto;
+}
+
+.kcp-app__footer {
+	display: flex;
+	justify-content: space-between;
+	gap: 1rem;
+	padding: 1rem 1.5rem;
+	border-top: 1px solid var(--kcp-border);
+	background: #fafaf8;
+}
+
+/* Step navigation */
+.kcp-steps {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+	margin-bottom: 1.5rem;
+}
+
+.kcp-steps__item {
+	display: flex;
+	align-items: center;
+	gap: 0.65rem;
+	width: 100%;
+	padding: 0.55rem 0.65rem;
+	border: none;
+	background: transparent;
+	border-radius: 8px;
+	cursor: pointer;
+	text-align: left;
+	color: var(--kcp-muted);
+	transition: background 0.15s, color 0.15s;
+}
+
+.kcp-steps__item:hover {
+	background: var(--kcp-bg);
+	color: var(--kcp-text);
+}
+
+.kcp-steps__item--active {
+	background: rgba(26, 95, 74, 0.1);
+	color: var(--kcp-primary);
+	font-weight: 600;
+}
+
+.kcp-steps__item--done .kcp-steps__num {
+	background: var(--kcp-primary);
+	color: #fff;
+}
+
+.kcp-steps__num {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.5rem;
+	height: 1.5rem;
+	border-radius: 50%;
+	background: var(--kcp-border);
+	font-size: 0.75rem;
+	font-weight: 600;
+	flex-shrink: 0;
+}
+
+.kcp-steps__label {
+	font-size: 0.875rem;
+}
+
+/* Buttons */
+.kcp-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.6rem 1.25rem;
+	border-radius: 8px;
+	border: 1px solid transparent;
+	font-size: 0.9375rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+}
+
+.kcp-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.kcp-btn--primary {
+	background: var(--kcp-primary);
+	color: #fff;
+}
+
+.kcp-btn--primary:hover:not(:disabled) {
+	background: var(--kcp-primary-dark);
+}
+
+.kcp-btn--ghost {
+	background: transparent;
+	border-color: var(--kcp-border);
+	color: var(--kcp-text);
+}
+
+.kcp-btn--ghost:hover:not(:disabled) {
+	background: var(--kcp-bg);
+}
+
+.kcp-btn--danger {
+	background: transparent;
+	border-color: var(--kcp-danger);
+	color: var(--kcp-danger);
+	margin-top: 1rem;
+}
+
+.kcp-btn--small {
+	padding: 0.35rem 0.75rem;
+	font-size: 0.8125rem;
+}
+
+/* Step content */
+.kcp-step__title {
+	margin: 0 0 1.25rem;
+	font-size: 1.375rem;
+	font-weight: 700;
+}
+
+.kcp-step__header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	margin-bottom: 1rem;
+}
+
+.kcp-empty,
+.kcp-hint,
+.kcp-loading {
+	color: var(--kcp-muted);
+}
+
+/* Grid layouts */
+.kcp-grid {
+	display: grid;
+	gap: 1rem;
+}
+
+.kcp-grid--layouts {
+	grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+}
+
+.kcp-grid--swatches {
+	grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+}
+
+/* Cards */
+.kcp-card {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.75rem;
+	border: 2px solid var(--kcp-border);
+	border-radius: var(--kcp-radius);
+	background: var(--kcp-surface);
+	cursor: pointer;
+	transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.kcp-card:hover {
+	border-color: var(--kcp-accent);
+}
+
+.kcp-card--active {
+	border-color: var(--kcp-primary);
+	box-shadow: 0 0 0 3px rgba(26, 95, 74, 0.15);
+}
+
+.kcp-card__img {
+	width: 100%;
+	height: 80px;
+	object-fit: cover;
+	border-radius: 6px;
+}
+
+.kcp-card__placeholder {
+	width: 100%;
+	height: 80px;
+	background: linear-gradient(135deg, #ecece6, #d8d8d0);
+	border-radius: 6px;
+}
+
+.kcp-card__label {
+	font-size: 0.875rem;
+	font-weight: 600;
+	text-align: center;
+}
+
+/* Swatches */
+.kcp-swatch {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.35rem;
+	padding: 0.5rem;
+	border: 2px solid var(--kcp-border);
+	border-radius: 8px;
+	background: var(--kcp-surface);
+	cursor: pointer;
+	min-height: 90px;
+}
+
+.kcp-swatch--active {
+	border-color: var(--kcp-primary);
+}
+
+.kcp-swatch img {
+	width: 48px;
+	height: 48px;
+	object-fit: cover;
+	border-radius: 6px;
+}
+
+.kcp-swatch__color {
+	width: 48px;
+	height: 48px;
+	border-radius: 6px;
+	border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.kcp-swatch small {
+	font-size: 0.7rem;
+	text-align: center;
+	color: var(--kcp-muted);
+	line-height: 1.2;
+}
+
+/* Tabs */
+.kcp-tabs {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin-bottom: 1.25rem;
+}
+
+.kcp-tab {
+	padding: 0.4rem 0.85rem;
+	border: 1px solid var(--kcp-border);
+	border-radius: 999px;
+	background: var(--kcp-surface);
+	cursor: pointer;
+	font-size: 0.8125rem;
+}
+
+.kcp-tab--active {
+	background: var(--kcp-primary);
+	border-color: var(--kcp-primary);
+	color: #fff;
+}
+
+/* Form fields */
+.kcp-field {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+}
+
+.kcp-field--full {
+	margin-bottom: 1rem;
+}
+
+.kcp-field span {
+	font-size: 0.8125rem;
+	font-weight: 600;
+	color: var(--kcp-muted);
+}
+
+.kcp-field input,
+.kcp-select {
+	width: 100%;
+	padding: 0.55rem 0.75rem;
+	border: 1px solid var(--kcp-border);
+	border-radius: 8px;
+	font-size: 0.9375rem;
+	background: #fff;
+}
+
+.kcp-field small {
+	font-size: 0.75rem;
+	color: var(--kcp-muted);
+}
+
+.kcp-dimensions__grid {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 1rem;
+	margin: 1rem 0;
+}
+
+.kcp-panel {
+	margin-bottom: 1.5rem;
+	padding-bottom: 1.5rem;
+	border-bottom: 1px solid var(--kcp-border);
+}
+
+.kcp-panel h3 {
+	margin: 0 0 0.75rem;
+	font-size: 1rem;
+}
+
+.kcp-panel .kcp-select {
+	margin-bottom: 0.75rem;
+}
+
+/* Checklist */
+.kcp-checklist {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	margin-top: 0.75rem;
+}
+
+.kcp-check {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	cursor: pointer;
+}
+
+/* Price panel */
+.kcp-price__title {
+	margin: 0 0 1rem;
+	font-size: 1rem;
+}
+
+.kcp-price__status {
+	color: var(--kcp-muted);
+	font-size: 0.875rem;
+}
+
+.kcp-price__error {
+	color: var(--kcp-danger);
+	font-size: 0.875rem;
+}
+
+.kcp-price__rows {
+	margin: 0;
+}
+
+.kcp-price__row {
+	display: flex;
+	justify-content: space-between;
+	padding: 0.35rem 0;
+	font-size: 0.875rem;
+}
+
+.kcp-price__row dt {
+	margin: 0;
+	color: var(--kcp-muted);
+}
+
+.kcp-price__row dd {
+	margin: 0;
+	font-weight: 600;
+}
+
+.kcp-price__row--total {
+	margin-top: 0.5rem;
+	padding-top: 0.5rem;
+	border-top: 1px solid var(--kcp-border);
+	font-size: 1rem;
+}
+
+.kcp-price__lines {
+	list-style: none;
+	margin: 1rem 0 0;
+	padding: 0;
+	font-size: 0.75rem;
+}
+
+.kcp-price__lines li {
+	display: flex;
+	justify-content: space-between;
+	gap: 0.5rem;
+	padding: 0.25rem 0;
+	color: var(--kcp-muted);
+}
+
+/* Projects panel */
+.kcp-projects__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+	margin-bottom: 0.75rem;
+}
+
+.kcp-projects__header h3 {
+	margin: 0;
+	font-size: 0.875rem;
+}
+
+.kcp-projects__list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.kcp-projects__list li {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+	padding: 0.65rem 0;
+	border-bottom: 1px solid var(--kcp-border);
+	font-size: 0.8125rem;
+}
+
+.kcp-projects__list strong {
+	display: block;
+}
+
+.kcp-projects__list span {
+	color: var(--kcp-muted);
+}
+
+.kcp-projects__empty {
+	font-size: 0.8125rem;
+	color: var(--kcp-muted);
+}
+
+/* Summary */
+.kcp-summary {
+	background: var(--kcp-bg);
+	padding: 1rem;
+	border-radius: var(--kcp-radius);
+	margin-bottom: 1rem;
+}
+
+.kcp-summary__total {
+	font-size: 1.125rem;
+}
+
+.kcp-summary__lines {
+	list-style: none;
+	margin: 0 0 1.5rem;
+	padding: 0;
+}
+
+.kcp-summary__lines li {
+	display: flex;
+	justify-content: space-between;
+	padding: 0.4rem 0;
+	border-bottom: 1px solid var(--kcp-border);
+	font-size: 0.875rem;
+}
+
+/* Messages */
+.kcp-message {
+	padding: 0.75rem 1rem;
+	border-radius: 8px;
+	font-size: 0.875rem;
+}
+
+.kcp-message--success {
+	background: rgba(26, 95, 74, 0.1);
+	color: var(--kcp-primary);
+}
+
+.kcp-message--error {
+	background: rgba(180, 35, 24, 0.08);
+	color: var(--kcp-danger);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+	.kcp-app {
+		grid-template-columns: 1fr;
+	}
+
+	.kcp-app__price {
+		order: -1;
+	}
+
+	.kcp-steps {
+		flex-direction: row;
+		flex-wrap: wrap;
+		overflow-x: auto;
+	}
+
+	.kcp-steps__item {
+		width: auto;
+		flex-shrink: 0;
+	}
+
+	.kcp-steps__label {
+		display: none;
+	}
+
+	.kcp-dimensions__grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+@media (max-width: 640px) {
+	.kcp-app {
+		padding: 0.75rem;
+		gap: 0.75rem;
+	}
+
+	.kcp-app__content {
+		padding: 1rem;
+	}
+
+	.kcp-grid--layouts {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.kcp-app__footer {
+		position: sticky;
+		bottom: 0;
+		z-index: 2;
+	}
+}
