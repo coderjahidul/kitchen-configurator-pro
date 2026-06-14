@@ -18,10 +18,24 @@ use KitchenConfiguratorPro\Domain\Enums\PricingRuleType;
 final class PricingRuleRepository extends AbstractRepository {
 
 	/**
+	 * Allowed ORDER BY columns.
+	 *
+	 * @var array<int, string>
+	 */
+	protected array $orderable_columns = array( 'id', 'name', 'priority', 'created_at', 'updated_at' );
+
+	/**
 	 * {@inheritDoc}
 	 */
 	protected function table(): string {
 		return 'kcp_pricing_rules';
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function find_all( array $criteria = array(), string $order_by = 'priority', string $order = 'ASC' ): array {
+		return parent::find_all( $criteria, $order_by, $order );
 	}
 
 	/**
