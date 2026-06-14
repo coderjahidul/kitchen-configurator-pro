@@ -52,11 +52,56 @@ final class CabinetsPage extends AbstractCrudPage {
 	 */
 	protected function list_columns(): array {
 		return array(
+			'id'          => __( 'ID', 'kitchen-configurator-pro' ),
 			'name'        => __( 'Name', 'kitchen-configurator-pro' ),
-			'category_id' => __( 'Category ID', 'kitchen-configurator-pro' ),
+			'category_id' => __( 'Category', 'kitchen-configurator-pro' ),
 			'base_price'  => __( 'Base Price', 'kitchen-configurator-pro' ),
 			'is_active'   => __( 'Active', 'kitchen-configurator-pro' ),
 		);
+	}
+
+	/**
+	 * Cached cabinet category names keyed by ID.
+	 *
+	 * @var array<int, string>|null
+	 */
+	private ?array $category_names = null;
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function format_column( string $column, array $row ): string {
+		if ( 'category_id' === $column ) {
+			$category_id = (int) ( $row['category_id'] ?? 0 );
+			$names       = $this->category_names();
+
+			return esc_html( $names[ $category_id ] ?? __( 'Unknown', 'kitchen-configurator-pro' ) );
+		}
+
+		return parent::format_column( $column, $row );
+	}
+
+	/**
+	 * Load cabinet category names for list display.
+	 *
+	 * @return array<int, string>
+	 */
+	private function category_names(): array {
+		if ( null !== $this->category_names ) {
+			return $this->category_names;
+		}
+
+		$this->category_names = array();
+
+		/** @var CabinetCategoryRepository $categories */
+		$categories = $this->container->get( CabinetCategoryRepository::class );
+
+		foreach ( $categories->find_all() as $category ) {
+			$row = Arr::to_array( $category );
+			$this->category_names[ (int) $row['id'] ] = (string) $row['name'];
+		}
+
+		return $this->category_names;
 	}
 
 	/**
