@@ -44,6 +44,8 @@ final class Helpers {
 		return array(
 			\KitchenConfiguratorPro\Database\Migrations\Migration_1_0_0::class,
 			\KitchenConfiguratorPro\Database\Migrations\Migration_1_1_0::class,
+			\KitchenConfiguratorPro\Database\Migrations\Migration_1_2_0::class,
+			\KitchenConfiguratorPro\Database\Migrations\Migration_1_3_0::class,
 		);
 	}
 

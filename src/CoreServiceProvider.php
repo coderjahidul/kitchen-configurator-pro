@@ -37,7 +37,7 @@ use KitchenConfiguratorPro\Services\CatalogService;
 use KitchenConfiguratorPro\Services\ConfigurationAuditService;
 use KitchenConfiguratorPro\Services\ConfigurationService;
 use KitchenConfiguratorPro\Services\ValidationService;
-use KitchenConfiguratorPro\Security\SecurityServiceProvider;
+use KitchenConfiguratorPro\Security\ConfigurationSchemaValidator;
 
 /**
  * Registers repositories and pricing services for the entire plugin.
