@@ -10,9 +10,16 @@ declare(strict_types=1);
 namespace KitchenConfiguratorPro\Integration\WooCommerce;
 
 use KitchenConfiguratorPro\Container;
+use KitchenConfiguratorPro\Repositories\CabinetRepository;
+use KitchenConfiguratorPro\Repositories\ColorRepository;
+use KitchenConfiguratorPro\Repositories\LayoutRepository;
+use KitchenConfiguratorPro\Repositories\MaterialRepository;
+use KitchenConfiguratorPro\Repositories\ProductPresetRepository;
 use KitchenConfiguratorPro\Services\CartIntegrationService;
 use KitchenConfiguratorPro\Services\ConfigurationService;
 use KitchenConfiguratorPro\Services\Pricing\PricingEngine;
+use KitchenConfiguratorPro\Services\ProductStorefrontOptionsBuilder;
+use KitchenConfiguratorPro\Services\WooVariationOptionsBuilder;
 
 /**
  * Registers WooCommerce integration services and hooks.
@@ -88,6 +95,51 @@ final class WooCommerceServiceProvider {
 				);
 			}
 		);
+
+		$this->container->singleton(
+			ProductPresetRepository::class,
+			static function () {
+				global $wpdb;
+
+				return new ProductPresetRepository( $wpdb );
+			}
+		);
+
+		$this->container->singleton(
+			ProductStorefrontOptionsBuilder::class,
+			function () {
+				return new ProductStorefrontOptionsBuilder(
+					$this->container->get( LayoutRepository::class ),
+					$this->container->get( MaterialRepository::class ),
+					$this->container->get( ColorRepository::class ),
+					$this->container->get( CabinetRepository::class )
+				);
+			}
+		);
+
+		$this->container->singleton(
+			WooVariationOptionsBuilder::class,
+			static fn () => new WooVariationOptionsBuilder()
+		);
+
+		$this->container->singleton(
+			ShopPresenter::class,
+			static fn () => new ShopPresenter()
+		);
+
+		$this->container->singleton(
+			ProductOptionsPresenter::class,
+			function () {
+				return new ProductOptionsPresenter( $this->container );
+			}
+		);
+
+		$this->container->singleton(
+			ProductConfiguratorPresenter::class,
+			function () {
+				return new ProductConfiguratorPresenter( $this->container );
+			}
+		);
 	}
 
 	/**
@@ -100,5 +152,8 @@ final class WooCommerceServiceProvider {
 		$this->container->get( CheckoutHandler::class )->register();
 		$this->container->get( OrderHandler::class )->register();
 		$this->container->get( OrderMetaDisplay::class )->register();
+		$this->container->get( ShopPresenter::class )->register();
+		$this->container->get( ProductOptionsPresenter::class )->register();
+		$this->container->get( ProductConfiguratorPresenter::class )->register();
 	}
 }
