@@ -128,9 +128,7 @@ $height_attribute   = (string) ( $height_attr ?? $options['height_attribute'] ??
 						aria-pressed="<?php echo $active ? 'true' : 'false'; ?>"
 					>
 						<span class="kcp-option-bar__label"><?php echo esc_html( $label ); ?></span>
-						<?php if ( $modifier > 0 ) : ?>
-							<span class="kcp-option-bar__price">+<?php echo esc_html( ShopPresenter::format_dutch_price( $modifier ) ); ?></span>
-						<?php endif; ?>
+						<span class="kcp-option-bar__price" hidden></span>
 					</button>
 				<?php endforeach; ?>
 			</div>

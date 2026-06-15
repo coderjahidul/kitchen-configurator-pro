@@ -67,6 +67,45 @@ function initQuantityStepper() {
 	} );
 }
 
+function updateHeightPriceLabels( root, getHeightPrice ) {
+	const activeHeight = root.querySelector( '[data-kcp-option-group="height"].kcp-option-bar--active' );
+
+	if ( ! activeHeight || typeof getHeightPrice !== 'function' ) {
+		return;
+	}
+
+	const selectedPrice = getHeightPrice( activeHeight );
+
+	if ( null === selectedPrice || Number.isNaN( selectedPrice ) ) {
+		return;
+	}
+
+	root.querySelectorAll( '[data-kcp-option-group="height"]' ).forEach( ( button ) => {
+		let priceEl = button.querySelector( '.kcp-option-bar__price' );
+		const isActive = button.classList.contains( 'kcp-option-bar--active' );
+		const optionPrice = getHeightPrice( button );
+		const diff = null !== optionPrice ? optionPrice - selectedPrice : 0;
+
+		if ( isActive || 0 === diff ) {
+			if ( priceEl ) {
+				priceEl.hidden = true;
+			}
+			return;
+		}
+
+		if ( ! priceEl ) {
+			priceEl = document.createElement( 'span' );
+			priceEl.className = 'kcp-option-bar__price';
+			button.appendChild( priceEl );
+		}
+
+		priceEl.hidden = false;
+		priceEl.textContent = diff > 0
+			? `+${ formatDutchPrice( diff ) }`
+			: `-${ formatDutchPrice( Math.abs( diff ) ) }`;
+	} );
+}
+
 function initOptionButtons( root, onChange ) {
 	root.querySelectorAll( '.kcp-option-bar' ).forEach( ( button ) => {
 		button.addEventListener( 'click', () => {
@@ -107,6 +146,8 @@ function initPresetOptions( root ) {
 		} );
 	};
 
+	const getHeightPrice = ( button ) => basePrice + Number( button.dataset.kcpOptionModifier || 0 );
+
 	initOptionButtons( root, ( button, group ) => {
 		if ( group === 'color' && colorInput ) {
 			colorInput.value = button.dataset.kcpOptionId || '';
@@ -117,6 +158,7 @@ function initPresetOptions( root ) {
 		}
 
 		updatePrices();
+		updateHeightPriceLabels( root, getHeightPrice );
 	} );
 
 	document.querySelectorAll( '.kcp-single-product__summary .price .kcp-price, .kcp-product-sticky__price .kcp-price' ).forEach( ( node ) => {
@@ -124,6 +166,7 @@ function initPresetOptions( root ) {
 	} );
 
 	updatePrices();
+	updateHeightPriceLabels( root, getHeightPrice );
 }
 
 function initVariationOptions( root ) {
@@ -162,6 +205,56 @@ function initVariationOptions( root ) {
 		jQuery( select ).trigger( 'change' );
 	};
 
+	const colorAttribute = root.dataset.colorAttribute || '';
+	const heightAttribute = root.dataset.heightAttribute || '';
+	let variations = [];
+
+	try {
+		variations = JSON.parse( form.dataset.productVariations || '[]' );
+	} catch ( error ) {
+		variations = [];
+	}
+
+	const getSelectedAttributeValue = ( attribute ) => {
+		if ( ! attribute ) {
+			return '';
+		}
+
+		const select = form.querySelector( `select[name="attribute_${ attribute }"]` );
+		return select ? select.value : '';
+	};
+
+	const getVariationPrice = ( colorValue, heightValue ) => {
+		const match = variations.find( ( variation ) => {
+			const attrs = variation.attributes || {};
+
+			if ( colorAttribute && colorValue && attrs[ `attribute_${ colorAttribute }` ] !== colorValue ) {
+				return false;
+			}
+
+			if ( heightAttribute && heightValue && attrs[ `attribute_${ heightAttribute }` ] !== heightValue ) {
+				return false;
+			}
+
+			return true;
+		} );
+
+		return match ? Number( match.display_price ) : null;
+	};
+
+	const getHeightPrice = ( button ) => {
+		const fromVariation = getVariationPrice(
+			getSelectedAttributeValue( colorAttribute ),
+			button.dataset.kcpWcValue || ''
+		);
+
+		if ( null !== fromVariation && ! Number.isNaN( fromVariation ) ) {
+			return fromVariation;
+		}
+
+		return Number( root.dataset.basePrice || 0 ) + Number( button.dataset.kcpOptionModifier || 0 );
+	};
+
 	const syncActiveFromSelects = () => {
 		root.querySelectorAll( '.kcp-option-bar' ).forEach( ( button ) => {
 			const attribute = button.dataset.kcpWcAttribute;
@@ -172,6 +265,8 @@ function initVariationOptions( root ) {
 			button.classList.toggle( 'kcp-option-bar--active', isActive );
 			button.setAttribute( 'aria-pressed', isActive ? 'true' : 'false' );
 		} );
+
+		updateHeightPriceLabels( root, getHeightPrice );
 	};
 
 	initOptionButtons( root, ( button ) => {

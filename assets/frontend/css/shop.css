@@ -420,6 +420,10 @@ body.kcp-shop-active.single-product:has(.kcp-product-options) .kcp-product-stick
 	white-space: nowrap;
 }
 
+.kcp-option-bar--height.kcp-option-bar--active .kcp-option-bar__price {
+	display: none;
+}
+
 /* ── Bottom price + cart ── */
 
 .kcp-product-options__price {
