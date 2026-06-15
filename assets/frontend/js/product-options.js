@@ -131,6 +131,7 @@ function initPresetOptions( root ) {
 	const colorInput = document.getElementById( 'kcp-selected-color' );
 	const heightInput = document.getElementById( 'kcp-selected-height' );
 	const priceNodes = document.querySelectorAll( '.kcp-live-price, .kcp-single-product__summary .price .kcp-price, .kcp-product-sticky__price .kcp-price' );
+	const groupIds = Array.from( root.querySelectorAll( '[data-kcp-group-id]' ) ).map( ( group ) => group.dataset.kcpGroupId || '' ).filter( Boolean );
 
 	const getActiveModifier = ( group ) => {
 		const active = root.querySelector( `[data-kcp-option-group="${ group }"].kcp-option-bar--active` );
@@ -138,7 +139,12 @@ function initPresetOptions( root ) {
 	};
 
 	const updatePrices = () => {
-		const total = basePrice + getActiveModifier( 'color' ) + getActiveModifier( 'height' );
+		let total = basePrice;
+
+		groupIds.forEach( ( groupId ) => {
+			total += getActiveModifier( groupId );
+		} );
+
 		const formatted = formatDutchPrice( total );
 
 		priceNodes.forEach( ( node ) => {
@@ -149,6 +155,12 @@ function initPresetOptions( root ) {
 	const getHeightPrice = ( button ) => basePrice + Number( button.dataset.kcpOptionModifier || 0 );
 
 	initOptionButtons( root, ( button, group ) => {
+		const optionInput = document.getElementById( `kcp-selected-${ group }` );
+
+		if ( optionInput ) {
+			optionInput.value = button.dataset.kcpOptionId || '';
+		}
+
 		if ( group === 'color' && colorInput ) {
 			colorInput.value = button.dataset.kcpOptionId || '';
 		}
@@ -158,7 +170,10 @@ function initPresetOptions( root ) {
 		}
 
 		updatePrices();
-		updateHeightPriceLabels( root, getHeightPrice );
+
+		if ( group === 'height' ) {
+			updateHeightPriceLabels( root, getHeightPrice );
+		}
 	} );
 
 	document.querySelectorAll( '.kcp-single-product__summary .price .kcp-price, .kcp-product-sticky__price .kcp-price' ).forEach( ( node ) => {

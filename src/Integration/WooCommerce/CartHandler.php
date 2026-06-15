@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace KitchenConfiguratorPro\Integration\WooCommerce;
 
 use KitchenConfiguratorPro\Security\SecurityLogger;
+use KitchenConfiguratorPro\Services\ProductBreakdownBuilder;
 
 /**
  * Applies KCP pricing and displays configuration data in the cart.
@@ -106,7 +107,16 @@ final class CartHandler {
 		}
 
 		foreach ( $cart->get_cart() as $cart_key => $cart_item ) {
-			if ( ! self::is_kcp_cart_item( $cart_item ) || ! isset( $cart_item['data'] ) ) {
+			if ( ! isset( $cart_item['data'] ) ) {
+				continue;
+			}
+
+			if ( self::is_product_breakdown_item( $cart_item ) ) {
+				$cart_item['data']->set_price( (float) ( $cart_item[ ProductBreakdownBuilder::META_TOTAL ] ?? 0 ) );
+				continue;
+			}
+
+			if ( ! self::is_kcp_cart_item( $cart_item ) ) {
 				continue;
 			}
 
@@ -202,6 +212,10 @@ final class CartHandler {
 	public function filter_cart_item_price( string $price, array $cart_item, string $cart_key ): string {
 		unset( $cart_key );
 
+		if ( self::is_product_breakdown_item( $cart_item ) && function_exists( 'wc_price' ) ) {
+			return wc_price( (float) ( $cart_item[ ProductBreakdownBuilder::META_TOTAL ] ?? 0 ) );
+		}
+
 		if ( ! empty( $cart_item[ self::META_TOTAL ] ) && function_exists( 'wc_price' ) ) {
 			return wc_price( (float) $cart_item[ self::META_TOTAL ] );
 		}
@@ -219,5 +233,16 @@ final class CartHandler {
 		return ! empty( $cart_item[ self::META_UUID ] )
 			&& ! empty( $cart_item[ self::META_HASH ] )
 			&& ! empty( $cart_item[ self::META_CONFIG ] );
+	}
+
+	/**
+	 * Check if cart item is a storefront product breakdown group.
+	 *
+	 * @param array<string, mixed> $cart_item Cart item.
+	 * @return bool
+	 */
+	public static function is_product_breakdown_item( array $cart_item ): bool {
+		return ! empty( $cart_item[ ProductBreakdownBuilder::META_PARTS ] )
+			&& is_array( $cart_item[ ProductBreakdownBuilder::META_PARTS ] );
 	}
 }

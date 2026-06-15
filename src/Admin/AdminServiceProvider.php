@@ -16,10 +16,10 @@ use KitchenConfiguratorPro\Admin\Pages\ColorsPage;
 use KitchenConfiguratorPro\Admin\Pages\ConfigurationsPage;
 use KitchenConfiguratorPro\Admin\Pages\DashboardPage;
 use KitchenConfiguratorPro\Admin\Pages\HandlesPage;
-use KitchenConfiguratorPro\Admin\Pages\LayoutsPage;
 use KitchenConfiguratorPro\Admin\Pages\MaterialsPage;
 use KitchenConfiguratorPro\Admin\Pages\PricingRulesPage;
 use KitchenConfiguratorPro\Admin\Pages\PlinthsPage;
+use KitchenConfiguratorPro\Admin\Pages\ProductPresetsPage;
 use KitchenConfiguratorPro\Admin\Pages\SettingsPage;
 use KitchenConfiguratorPro\Admin\Pages\WorktopsPage;
 use KitchenConfiguratorPro\Container;
@@ -53,7 +53,7 @@ final class AdminServiceProvider {
 	public function register(): void {
 		$pages = array(
 			DashboardPage::class,
-			LayoutsPage::class,
+			ProductPresetsPage::class,
 			CabinetCategoriesPage::class,
 			CabinetsPage::class,
 			MaterialsPage::class,

@@ -63,7 +63,6 @@ export function createStore( initial = {} ) {
 }
 
 export const STEPS = [
-	'layout',
 	'cabinets',
 	'finishes',
 	'extras',

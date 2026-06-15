@@ -13,6 +13,7 @@ use KitchenConfiguratorPro\Admin\AbstractCrudPage;
 use KitchenConfiguratorPro\Integration\WooCommerce\ProductManager;
 use KitchenConfiguratorPro\Repositories\LayoutRepository;
 use KitchenConfiguratorPro\Repositories\ProductPresetRepository;
+use KitchenConfiguratorPro\Services\ProductPresetFormSerializer;
 use KitchenConfiguratorPro\Support\Arr;
 
 /**
@@ -55,17 +56,9 @@ final class ProductPresetsPage extends AbstractCrudPage {
 		return array(
 			'name'          => __( 'Name', 'kitchen-configurator-pro' ),
 			'wc_product_id' => __( 'WooCommerce Product', 'kitchen-configurator-pro' ),
-			'layout_id'     => __( 'Layout', 'kitchen-configurator-pro' ),
 			'is_active'     => __( 'Active', 'kitchen-configurator-pro' ),
 		);
 	}
-
-	/**
-	 * Cached layout names keyed by ID.
-	 *
-	 * @var array<int, string>|null
-	 */
-	private ?array $layout_names = null;
 
 	/**
 	 * {@inheritDoc}
@@ -78,13 +71,6 @@ final class ProductPresetsPage extends AbstractCrudPage {
 			return esc_html( '' !== $title ? $title : (string) $product_id );
 		}
 
-		if ( 'layout_id' === $column ) {
-			$layout_id = (int) ( $row['layout_id'] ?? 0 );
-			$names     = $this->layout_names();
-
-			return esc_html( $names[ $layout_id ] ?? __( 'Unknown', 'kitchen-configurator-pro' ) );
-		}
-
 		return parent::format_column( $column, $row );
 	}
 
@@ -93,39 +79,16 @@ final class ProductPresetsPage extends AbstractCrudPage {
 	 */
 	protected function form_fields(): array {
 		return array(
-			'wc_product_id'      => array(
+			'wc_product_id' => array(
 				'type'     => 'select',
 				'label'    => __( 'WooCommerce Product', 'kitchen-configurator-pro' ),
 				'required' => true,
-				'options'  => array(),
 			),
-			'layout_id'          => array(
-				'type'     => 'select',
-				'label'    => __( 'Layout', 'kitchen-configurator-pro' ),
-				'required' => true,
-				'options'  => array(),
+			'name'          => array(
+				'type'  => 'text',
+				'label' => __( 'Preset Name', 'kitchen-configurator-pro' ),
 			),
-			'name'               => array(
-				'type'        => 'text',
-				'label'       => __( 'Preset Name', 'kitchen-configurator-pro' ),
-				'description' => __( 'Optional admin label. Defaults to the WooCommerce product name.', 'kitchen-configurator-pro' ),
-			),
-			'configuration_json' => array(
-				'type'        => 'json',
-				'label'       => __( 'Configuration (JSON)', 'kitchen-configurator-pro' ),
-				'required'    => true,
-				'default'     => '{"schema_version":"1.0","layout_id":0,"title":"","cabinets":[],"global_options":{},"product_options":{"specs":{"dimensions":["311.4 cm breed","60 cm diep","209.3 cm hoog"],"includes":["1x oven 60 cm hoog","1x koelkast 178 cm hoog"]},"colors":[{"id":"light-oak","label":"licht gerookt eiken decor","image_url":"","price_modifier":0},{"id":"single-oak","label":"enkel gerookt eiken decor","image_url":"","price_modifier":0},{"id":"double-oak","label":"dubbel gerookt eiken decor","note":"in winkelwagen te personaliseren","image_url":"","price_modifier":0}],"heights":[{"id":"209","label":"209.3 cm hoog","price_modifier":0},{"id":"222","label":"222.2 cm hoog","price_modifier":195},{"id":"235","label":"235.2 cm hoog","price_modifier":314}],"default_color":"light-oak","default_height":"209"}}',
-				'rows'        => 16,
-				'description' => __( 'Default configurator data plus optional product_options for storefront color/height selectors.', 'kitchen-configurator-pro' ),
-			),
-			'catalog_scope_json' => array(
-				'type'        => 'json',
-				'label'       => __( 'Catalog Scope (JSON)', 'kitchen-configurator-pro' ),
-				'default'     => '{}',
-				'rows'        => 8,
-				'description' => __( 'Optional limits on which catalog items are available for this product.', 'kitchen-configurator-pro' ),
-			),
-			'is_active'          => array(
+			'is_active'     => array(
 				'type'    => 'checkbox',
 				'label'   => __( 'Active', 'kitchen-configurator-pro' ),
 				'default' => 1,
@@ -164,7 +127,7 @@ final class ProductPresetsPage extends AbstractCrudPage {
 		$layout_id = (int) ( $data['layout_id'] ?? 0 );
 
 		if ( $layout_id <= 0 ) {
-			return __( 'Please select a layout.', 'kitchen-configurator-pro' );
+			return __( 'No layout is available. At least one active layout must exist in the database.', 'kitchen-configurator-pro' );
 		}
 
 		/** @var ProductPresetRepository $repository */
@@ -176,21 +139,65 @@ final class ProductPresetsPage extends AbstractCrudPage {
 			return __( 'This WooCommerce product is already linked to another preset.', 'kitchen-configurator-pro' );
 		}
 
+		$config = json_decode( (string) ( $data['configuration_json'] ?? '{}' ), true );
+		$parts  = is_array( $config['product_options']['parts'] ?? null ) ? $config['product_options']['parts'] : array();
+
+		if ( empty( $parts ) ) {
+			return __( 'Add at least one cart breakdown part with a label.', 'kitchen-configurator-pro' );
+		}
+
 		return null;
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
-	protected function form_context( array $values ): array {
-		$fields = $this->form_fields();
-
-		$fields['wc_product_id']['options'] = array( '' => __( '— Select WooCommerce product —', 'kitchen-configurator-pro' ) ) + $this->woocommerce_product_options();
-		$fields['layout_id']['options']     = array( '' => __( '— Select layout —', 'kitchen-configurator-pro' ) ) + $this->layout_options();
-
-		return array(
-			'fields' => $fields,
+	protected function collect_post_data(): array {
+		$data = array(
+			'wc_product_id' => isset( $_POST['wc_product_id'] ) ? (int) $_POST['wc_product_id'] : 0,
+			'name'          => isset( $_POST['name'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['name'] ) ) : '',
+			'is_active'     => isset( $_POST['is_active'] ) ? '1' : '0',
+			'layout_id'     => 0,
 		);
+
+		$id = isset( $_POST['id'] ) ? (int) $_POST['id'] : 0;
+
+		if ( $id > 0 ) {
+			$item = $this->repository()->find( $id );
+
+			if ( null !== $item ) {
+				$data['layout_id'] = $item->layout_id;
+			}
+		}
+
+		if ( (int) $data['layout_id'] <= 0 ) {
+			$data['layout_id'] = $this->default_layout_id();
+		}
+
+		$preset_post     = isset( $_POST['kcp_preset'] ) && is_array( $_POST['kcp_preset'] )
+			? wp_unslash( $_POST['kcp_preset'] )
+			: array();
+		$existing_config = array();
+		$catalog_scope   = '';
+
+		if ( $id > 0 ) {
+			$item = $this->repository()->find( $id );
+
+			if ( null !== $item ) {
+				$decoded = json_decode( $item->configuration_json, true );
+				$existing_config = is_array( $decoded ) ? $decoded : array();
+				$catalog_scope   = (string) $item->catalog_scope_json;
+			}
+		}
+
+		$data['configuration_json'] = $this->serializer()->to_configuration_json(
+			$preset_post,
+			(int) $data['layout_id'],
+			$existing_config
+		);
+		$data['catalog_scope_json'] = $catalog_scope;
+
+		return $data;
 	}
 
 	/**
@@ -214,30 +221,36 @@ final class ProductPresetsPage extends AbstractCrudPage {
 			$values = Arr::to_array( $item );
 		}
 
-		$fields  = $this->form_fields();
-		$context = $this->form_context( $values );
-		$fields  = $context['fields'] ?? $fields;
-
-		foreach ( $fields as $key => $field ) {
-			if ( ! isset( $values[ $key ] ) && isset( $field['default'] ) ) {
-				$values[ $key ] = $field['default'];
-			}
+		if ( ! isset( $values['is_active'] ) ) {
+			$values['is_active'] = 1;
 		}
 
+		$preset = $this->serializer()->from_configuration_json( (string) ( $values['configuration_json'] ?? '{}' ) );
+
 		$this->load_template(
-			'crud-form',
+			'product-preset-form',
 			array(
-				'page'         => $this,
-				'is_edit'      => $is_edit,
-				'id'           => $id,
-				'values'       => $values,
-				'fields'       => $fields,
-				'notices'      => $this->resolve_notices(),
-				'list_url'     => $this->list_url(),
-				'entity_label' => $this->entity_label(),
-				'nonce_action' => $this->nonce_action(),
+				'page'                 => $this,
+				'is_edit'              => $is_edit,
+				'id'                   => $id,
+				'values'               => $values,
+				'preset'               => $preset,
+				'option_type_labels'   => $this->serializer()->option_type_labels(),
+				'part_type_labels'     => $this->serializer()->part_type_labels(),
+				'wc_product_options'   => array( '' => __( '— Select WooCommerce product —', 'kitchen-configurator-pro' ) ) + $this->woocommerce_product_options(),
+				'notices'              => $this->resolve_notices(),
+				'list_url'             => $this->list_url(),
+				'entity_label'         => $this->entity_label(),
+				'nonce_action'         => $this->nonce_action(),
 			)
 		);
+	}
+
+	/**
+	 * @return ProductPresetFormSerializer
+	 */
+	private function serializer(): ProductPresetFormSerializer {
+		return new ProductPresetFormSerializer();
 	}
 
 	/**
@@ -284,11 +297,11 @@ final class ProductPresetsPage extends AbstractCrudPage {
 	}
 
 	/**
-	 * Build layout select options.
+	 * Resolve the default layout ID for new product presets.
 	 *
-	 * @return array<string, string>
+	 * @return int
 	 */
-	private function layout_options(): array {
+	private function default_layout_id(): int {
 		/** @var LayoutRepository $layouts */
 		$layouts = $this->container->get( LayoutRepository::class );
 		$options = array();
@@ -298,25 +311,8 @@ final class ProductPresetsPage extends AbstractCrudPage {
 			$options[ (string) $row['id'] ] = (string) $row['name'];
 		}
 
-		return $options;
-	}
+		$ids = array_keys( $options );
 
-	/**
-	 * Load layout names for list display.
-	 *
-	 * @return array<int, string>
-	 */
-	private function layout_names(): array {
-		if ( null !== $this->layout_names ) {
-			return $this->layout_names;
-		}
-
-		$this->layout_names = array();
-
-		foreach ( $this->layout_options() as $id => $name ) {
-			$this->layout_names[ (int) $id ] = $name;
-		}
-
-		return $this->layout_names;
+		return $ids ? (int) $ids[0] : 0;
 	}
 }

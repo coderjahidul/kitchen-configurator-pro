@@ -18,6 +18,7 @@ use KitchenConfiguratorPro\Repositories\ProductPresetRepository;
 use KitchenConfiguratorPro\Services\CartIntegrationService;
 use KitchenConfiguratorPro\Services\ConfigurationService;
 use KitchenConfiguratorPro\Services\Pricing\PricingEngine;
+use KitchenConfiguratorPro\Services\ProductBreakdownBuilder;
 use KitchenConfiguratorPro\Services\ProductStorefrontOptionsBuilder;
 use KitchenConfiguratorPro\Services\WooVariationOptionsBuilder;
 
@@ -106,6 +107,11 @@ final class WooCommerceServiceProvider {
 		);
 
 		$this->container->singleton(
+			ProductBreakdownBuilder::class,
+			static fn () => new ProductBreakdownBuilder()
+		);
+
+		$this->container->singleton(
 			ProductStorefrontOptionsBuilder::class,
 			function () {
 				return new ProductStorefrontOptionsBuilder(
@@ -119,12 +125,25 @@ final class WooCommerceServiceProvider {
 
 		$this->container->singleton(
 			WooVariationOptionsBuilder::class,
-			static fn () => new WooVariationOptionsBuilder()
+			function () {
+				return new WooVariationOptionsBuilder(
+					$this->container->get( ProductPresetRepository::class ),
+					$this->container->get( ProductStorefrontOptionsBuilder::class ),
+					$this->container->get( ProductBreakdownBuilder::class )
+				);
+			}
 		);
 
 		$this->container->singleton(
 			ShopPresenter::class,
 			static fn () => new ShopPresenter()
+		);
+
+		$this->container->singleton(
+			CartPresenter::class,
+			function () {
+				return new CartPresenter( $this->container );
+			}
 		);
 
 		$this->container->singleton(
@@ -153,6 +172,7 @@ final class WooCommerceServiceProvider {
 		$this->container->get( OrderHandler::class )->register();
 		$this->container->get( OrderMetaDisplay::class )->register();
 		$this->container->get( ShopPresenter::class )->register();
+		$this->container->get( CartPresenter::class )->register();
 		$this->container->get( ProductOptionsPresenter::class )->register();
 		$this->container->get( ProductConfiguratorPresenter::class )->register();
 	}

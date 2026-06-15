@@ -16,10 +16,10 @@ use KitchenConfiguratorPro\Admin\Pages\ColorsPage;
 use KitchenConfiguratorPro\Admin\Pages\ConfigurationsPage;
 use KitchenConfiguratorPro\Admin\Pages\DashboardPage;
 use KitchenConfiguratorPro\Admin\Pages\HandlesPage;
-use KitchenConfiguratorPro\Admin\Pages\LayoutsPage;
 use KitchenConfiguratorPro\Admin\Pages\MaterialsPage;
 use KitchenConfiguratorPro\Admin\Pages\PricingRulesPage;
 use KitchenConfiguratorPro\Admin\Pages\PlinthsPage;
+use KitchenConfiguratorPro\Admin\Pages\ProductPresetsPage;
 use KitchenConfiguratorPro\Admin\Pages\SettingsPage;
 use KitchenConfiguratorPro\Admin\Pages\WorktopsPage;
 use KitchenConfiguratorPro\Container;
@@ -66,7 +66,7 @@ final class Menu {
 
 		$pages = array(
 			array( DashboardPage::class, __( 'Dashboard', 'kitchen-configurator-pro' ), 'kitchen-configurator-pro' ),
-			array( LayoutsPage::class, __( 'Layouts', 'kitchen-configurator-pro' ), 'kcp-layouts' ),
+			array( ProductPresetsPage::class, __( 'Products', 'kitchen-configurator-pro' ), 'kcp-products' ),
 			array( CabinetCategoriesPage::class, __( 'Cabinet Categories', 'kitchen-configurator-pro' ), 'kcp-cabinet-categories' ),
 			array( CabinetsPage::class, __( 'Cabinets', 'kitchen-configurator-pro' ), 'kcp-cabinets' ),
 			array( MaterialsPage::class, __( 'Materials', 'kitchen-configurator-pro' ), 'kcp-materials' ),

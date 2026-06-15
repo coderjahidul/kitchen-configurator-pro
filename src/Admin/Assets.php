@@ -48,6 +48,36 @@ final class Assets {
 			KCP_VERSION,
 			true
 		);
+
+		if ( 'kitchen-configurator_page_kcp-products' === $hook_suffix ) {
+			wp_enqueue_media();
+
+			wp_enqueue_script(
+				'kcp-product-preset-media',
+				KCP_PLUGIN_URL . 'assets/admin/js/product-preset-media.js',
+				array( 'jquery' ),
+				KCP_VERSION,
+				true
+			);
+
+			wp_localize_script(
+				'kcp-product-preset-media',
+				'kcpProductPresetMedia',
+				array(
+					'selectTitle'  => __( 'Select image', 'kitchen-configurator-pro' ),
+					'selectButton' => __( 'Use image', 'kitchen-configurator-pro' ),
+					'emptyLabel'   => __( 'No image selected', 'kitchen-configurator-pro' ),
+				)
+			);
+
+			wp_enqueue_script(
+				'kcp-product-preset-form',
+				KCP_PLUGIN_URL . 'assets/admin/js/product-preset-form.js',
+				array( 'kcp-product-preset-media' ),
+				KCP_VERSION,
+				true
+			);
+		}
 	}
 
 	/**
@@ -69,6 +99,7 @@ final class Assets {
 			'kitchen-configurator_page_kcp-pricing-rules',
 			'kitchen-configurator_page_kcp-configurations',
 			'kitchen-configurator_page_kcp-settings',
+			'kitchen-configurator_page_kcp-products',
 		);
 
 		return in_array( $hook_suffix, $screens, true );

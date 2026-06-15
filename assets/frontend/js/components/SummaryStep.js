@@ -2,7 +2,7 @@
  * Step 5: Summary and save.
  */
 
-import { escapeHtml, formatMoney, findById } from '../utils/helpers.js';
+import { escapeHtml, formatMoney } from '../utils/helpers.js';
 
 export class SummaryStep {
 	/**
@@ -24,7 +24,6 @@ export class SummaryStep {
 
 	render( state ) {
 		const { config, pricing, savedUuid, saveMessage, saveError, saving, cartAdding, cartError } = state;
-		const layout = findById( state.catalog?.layouts || [], config.layout_id );
 
 		this.container.innerHTML = `
 			<section class="kcp-step">
@@ -32,11 +31,10 @@ export class SummaryStep {
 
 				<label class="kcp-field kcp-field--full">
 					<span>${ escapeHtml( this.i18n.projectTitle ) }</span>
-					<input type="text" id="kcp-project-title" value="${ escapeHtml( config.title || '' ) }" placeholder="${ escapeHtml( layout?.name || 'My Kitchen' ) }">
+					<input type="text" id="kcp-project-title" value="${ escapeHtml( config.title || '' ) }" placeholder="${ escapeHtml( 'My Kitchen' ) }">
 				</label>
 
 				<div class="kcp-summary">
-					<p><strong>Layout:</strong> ${ escapeHtml( layout?.name || '—' ) }</p>
 					<p><strong>Cabinets:</strong> ${ config.cabinets?.length || 0 }</p>
 					${
 						pricing

@@ -9,10 +9,25 @@ declare(strict_types=1);
 
 namespace KitchenConfiguratorPro\Services;
 
+use KitchenConfiguratorPro\Domain\Entities\ProductPreset;
+use KitchenConfiguratorPro\Repositories\ProductPresetRepository;
+
 /**
- * Maps native WooCommerce variation attributes to pill selector data.
+ * Maps variable product selectors to configurator preset options or native WC variations.
  */
 final class WooVariationOptionsBuilder {
+
+	/**
+	 * @param ProductPresetRepository         $presets           Product preset repository.
+	 * @param ProductStorefrontOptionsBuilder $storefront_builder Storefront options builder.
+	 * @param ProductBreakdownBuilder         $breakdown_builder  Cart breakdown builder.
+	 */
+	public function __construct(
+		private readonly ProductPresetRepository $presets,
+		private readonly ProductStorefrontOptionsBuilder $storefront_builder,
+		private readonly ProductBreakdownBuilder $breakdown_builder
+	) {
+	}
 
 	/**
 	 * Whether a variable product can render pill selectors.
@@ -27,11 +42,13 @@ final class WooVariationOptionsBuilder {
 
 		$built = $this->build( $product );
 
-		return ! empty( $built['colors'] ) || ! empty( $built['heights'] );
+		return ! empty( $built['option_groups'] )
+			|| ! empty( $built['colors'] )
+			|| ! empty( $built['heights'] );
 	}
 
 	/**
-	 * Build storefront option data from WooCommerce variations.
+	 * Build storefront option data from a linked preset or WooCommerce variations.
 	 *
 	 * @param \WC_Product $product Product.
 	 * @return array<string, mixed>
@@ -41,6 +58,66 @@ final class WooVariationOptionsBuilder {
 			return array();
 		}
 
+		$preset = $this->presets->find_by_wc_product_id( (int) $product->get_id() );
+
+		if ( null !== $preset && $preset->is_active && $this->storefront_builder->supports_cart( $preset ) ) {
+			$preset_options = $this->build_from_preset( $product, $preset );
+
+			if ( ! empty( $preset_options['option_groups'] )
+				|| ! empty( $preset_options['colors'] )
+				|| ! empty( $preset_options['heights'] ) ) {
+				return $preset_options;
+			}
+		}
+
+		return $this->build_from_variations( $product );
+	}
+
+	/**
+	 * Build selector data from a linked configurator product preset.
+	 *
+	 * @param \WC_Product   $product Product.
+	 * @param ProductPreset $preset  Product preset.
+	 * @return array<string, mixed>
+	 */
+	private function build_from_preset( \WC_Product $product, ProductPreset $preset ): array {
+		$storefront = $this->storefront_builder->build( $preset );
+		$attributes = $product->get_variation_attributes();
+		$variations = $product->get_available_variations();
+
+		$default_color  = (string) ( $storefront['default_color'] ?? '' );
+		$default_height = (string) ( $storefront['default_height'] ?? '' );
+		$base_price     = (float) wc_get_price_to_display( $product );
+
+		if ( $base_price <= 0 && $this->breakdown_builder->has_parts( $preset ) ) {
+			$base_price = $this->resolve_preset_base_price( $storefront, $default_color, $default_height );
+		}
+
+		return array(
+			'from_preset'       => true,
+			'use_wc_variations' => ! empty( $variations ),
+			'color_attribute'   => $this->find_attribute( $attributes, 'color' ),
+			'height_attribute'  => $this->find_attribute( $attributes, 'height' ),
+			'specs'             => is_array( $storefront['specs'] ?? null ) ? $storefront['specs'] : array(
+				'dimensions' => array(),
+				'includes'   => array(),
+			),
+			'option_groups'     => is_array( $storefront['option_groups'] ?? null ) ? $storefront['option_groups'] : array(),
+			'colors'            => is_array( $storefront['colors'] ?? null ) ? $storefront['colors'] : array(),
+			'heights'           => is_array( $storefront['heights'] ?? null ) ? $storefront['heights'] : array(),
+			'default_color'     => $default_color,
+			'default_height'    => $default_height,
+			'base_price'        => $base_price,
+		);
+	}
+
+	/**
+	 * Build selector data from native WooCommerce variation attributes.
+	 *
+	 * @param \WC_Product $product Product.
+	 * @return array<string, mixed>
+	 */
+	private function build_from_variations( \WC_Product $product ): array {
 		/** @var \WC_Product_Variable $product */
 		$variations = $product->get_available_variations();
 		$attributes = $product->get_variation_attributes();
@@ -59,18 +136,42 @@ final class WooVariationOptionsBuilder {
 		$base_price = $this->resolve_base_price( $variations, $color_attr, $height_attr, $default_color, $default_height );
 
 		return array(
-			'color_attribute'  => $color_attr,
-			'height_attribute' => $height_attr,
-			'specs'            => array(
+			'from_preset'       => false,
+			'use_wc_variations' => true,
+			'color_attribute'   => $color_attr,
+			'height_attribute'  => $height_attr,
+			'specs'             => array(
 				'dimensions' => array(),
 				'includes'   => array(),
 			),
-			'colors'           => $this->build_color_options( $variations, $color_attr, $default_color ),
-			'heights'          => $this->build_height_options( $variations, $color_attr, $height_attr, $default_color, $default_height, $base_price ),
-			'default_color'    => $default_color,
-			'default_height'   => $default_height,
-			'base_price'       => $base_price,
+			'option_groups'     => array(),
+			'colors'            => $this->build_color_options( $variations, $color_attr, $default_color ),
+			'heights'           => $this->build_height_options( $variations, $color_attr, $height_attr, $default_color, $default_height, $base_price ),
+			'default_color'     => $default_color,
+			'default_height'    => $default_height,
+			'base_price'        => $base_price,
 		);
+	}
+
+	/**
+	 * Resolve the storefront base price from breakdown parts only.
+	 *
+	 * @param array<string, mixed> $options        Built storefront options.
+	 * @param string               $default_color  Default color ID.
+	 * @param string               $default_height Default height ID.
+	 * @return float
+	 */
+	private function resolve_preset_base_price( array $options, string $default_color, string $default_height ): float {
+		$resolved = $this->breakdown_builder->resolve( $options, $default_color, $default_height );
+
+		$parts_total = array_sum(
+			array_map(
+				static fn ( array $part ): float => (float) ( $part['price'] ?? 0 ),
+				is_array( $resolved['parts'] ?? null ) ? $resolved['parts'] : array()
+			)
+		);
+
+		return max( 0.0, $parts_total );
 	}
 
 	/**

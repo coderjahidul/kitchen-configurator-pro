@@ -4,7 +4,6 @@
 
 import { STEPS, buildPayload } from '../state/store.js';
 import { debounce } from '../utils/helpers.js';
-import { LayoutStep } from './LayoutStep.js';
 import { CabinetsStep } from './CabinetsStep.js';
 import { FinishesStep } from './FinishesStep.js';
 import { ExtrasStep } from './ExtrasStep.js';
@@ -28,7 +27,6 @@ export class App {
 		this.currency = boot.currency || 'EUR';
 
 		this.steps = [
-			{ id: 'layout', label: this.i18n.stepLayout },
 			{ id: 'cabinets', label: this.i18n.stepCabinets },
 			{ id: 'finishes', label: this.i18n.stepFinishes },
 			{ id: 'extras', label: this.i18n.stepExtras },
@@ -45,7 +43,18 @@ export class App {
 
 		try {
 			const { data } = await this.api.getCatalog();
-			this.store.setState( { catalog: data, loading: false, error: null } );
+			const state = this.store.getState();
+			const layoutId = state.config.layout_id || this.defaultLayoutId( data );
+
+			this.store.setState( {
+				catalog: data,
+				loading: false,
+				error: null,
+				config: {
+					...state.config,
+					layout_id: layoutId,
+				},
+			} );
 
 			const uuid = this.root.dataset.uuid;
 			if ( uuid ) {
@@ -89,7 +98,6 @@ export class App {
 	}
 
 	mountComponents() {
-		this.layoutStep = new LayoutStep( this.contentEl, this.store, this.i18n );
 		this.cabinetsStep = new CabinetsStep( this.contentEl, this.store, this.i18n );
 		this.finishesStep = new FinishesStep( this.contentEl, this.store, this.i18n );
 		this.extrasStep = new ExtrasStep( this.contentEl, this.store, this.i18n );
@@ -126,6 +134,12 @@ export class App {
 		}
 	}
 
+	defaultLayoutId( catalog ) {
+		const layouts = catalog?.layouts || [];
+
+		return layouts[0]?.id || null;
+	}
+
 	renderStepsNav( state ) {
 		this.stepsNav.innerHTML = this.steps
 			.map(
@@ -148,12 +162,9 @@ export class App {
 	}
 
 	renderActiveStep( state ) {
-		const stepId = STEPS[ state.step ] || 'layout';
+		const stepId = STEPS[ state.step ] || 'cabinets';
 
 		switch ( stepId ) {
-			case 'layout':
-				this.layoutStep.render( state );
-				break;
 			case 'cabinets':
 				this.cabinetsStep.render( state );
 				break;
@@ -191,10 +202,6 @@ export class App {
 
 	canAdvance( state, stepIndex ) {
 		const stepId = STEPS[ stepIndex ];
-
-		if ( stepId === 'layout' ) {
-			return Boolean( state.config.layout_id );
-		}
 
 		if ( stepId === 'cabinets' ) {
 			return ( state.config.cabinets?.length || 0 ) > 0;
@@ -248,10 +255,12 @@ export class App {
 	}
 
 	resetConfiguration() {
+		const catalog = this.store.getState().catalog;
+
 		this.store.setState( {
 			config: {
 				schema_version: '1.0',
-				layout_id: null,
+				layout_id: this.defaultLayoutId( catalog ),
 				title: this.root.dataset.title || '',
 				cabinets: [],
 				global_options: {},

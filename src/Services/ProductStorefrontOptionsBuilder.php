@@ -60,7 +60,24 @@ final class ProductStorefrontOptionsBuilder {
 			'heights'        => $this->build_heights( $config, $manual, $cabinet ),
 			'default_color'  => (string) ( $manual['default_color'] ?? $config['default_color'] ?? '' ),
 			'default_height' => (string) ( $manual['default_height'] ?? '' ),
+			'option_groups'  => array(),
 		);
+
+		$manual_groups = $this->normalize_storefront_groups(
+			is_array( $manual['option_groups'] ?? null ) ? $manual['option_groups'] : array()
+		);
+
+		if ( ! empty( $manual_groups ) ) {
+			$built['option_groups'] = $manual_groups;
+			$built                  = $this->apply_groups_to_legacy_options( $built, $manual_groups );
+		} else {
+			$built['option_groups'] = $this->groups_from_legacy_options(
+				$built['colors'],
+				$built['heights'],
+				$built['default_color'],
+				$built['default_height']
+			);
+		}
 
 		if ( '' === $built['default_color'] && ! empty( $built['colors'] ) ) {
 			$built['default_color'] = (string) ( $built['colors'][0]['id'] ?? '' );
@@ -70,26 +87,72 @@ final class ProductStorefrontOptionsBuilder {
 			$built['default_height'] = (string) ( $built['heights'][0]['id'] ?? '' );
 		}
 
+		$built['group_title']   = sanitize_text_field( (string) ( $manual['group_title'] ?? '' ) );
+		$built['preview_image'] = esc_url_raw( (string) ( $manual['preview_image'] ?? '' ) );
+		$built['parts']         = $this->normalize_parts( is_array( $manual['parts'] ?? null ) ? $manual['parts'] : array() );
+
 		return $built;
 	}
 
 	/**
-	 * Whether a preset can render storefront selectors.
+	 * Whether a preset can render the duplicate storefront block on the single product page.
+	 *
+	 * Hidden by default so variable-product pill selectors are not duplicated.
+	 * Set product_options.show_storefront to true to display the preset block.
 	 *
 	 * @param ProductPreset $preset Product preset.
 	 * @return bool
 	 */
 	public function can_render( ProductPreset $preset ): bool {
-		if ( ! $preset->is_active || $preset->layout_id <= 0 ) {
+		if ( ! $this->supports_cart( $preset ) || ! $this->show_storefront( $preset ) ) {
 			return false;
 		}
 
 		$options = $this->build( $preset );
 
-		return ! empty( $options['colors'] )
+		return ! empty( $options['option_groups'] )
+			|| ! empty( $options['colors'] )
 			|| ! empty( $options['heights'] )
 			|| ! empty( $options['specs']['dimensions'] )
 			|| ! empty( $options['specs']['includes'] );
+	}
+
+	/**
+	 * Whether an active preset should attach cart metadata on add-to-cart.
+	 *
+	 * @param ProductPreset $preset Product preset.
+	 * @return bool
+	 */
+	public function supports_cart( ProductPreset $preset ): bool {
+		if ( ! $preset->is_active ) {
+			return false;
+		}
+
+		return $preset->layout_id > 0 || $this->has_cart_breakdown( $preset );
+	}
+
+	/**
+	 * Whether a preset defines manual cart breakdown parts.
+	 *
+	 * @param ProductPreset $preset Product preset.
+	 * @return bool
+	 */
+	public function has_cart_breakdown( ProductPreset $preset ): bool {
+		$parts = $preset->product_options()['parts'] ?? array();
+
+		return is_array( $parts ) && ! empty( $parts );
+	}
+
+	/**
+	 * Whether the preset storefront block should appear on the single product page.
+	 *
+	 * @param ProductPreset $preset Product preset.
+	 * @return bool
+	 */
+	public function show_storefront( ProductPreset $preset ): bool {
+		$manual = $preset->product_options();
+
+		return ! empty( $manual['show_storefront'] );
 	}
 
 	/**
@@ -422,6 +485,45 @@ final class ProductStorefrontOptionsBuilder {
 	}
 
 	/**
+	 * @param array<int, mixed> $parts Raw cart breakdown part rows.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function normalize_parts( array $parts ): array {
+		$normalized = array();
+
+		foreach ( $parts as $part ) {
+			if ( ! is_array( $part ) ) {
+				continue;
+			}
+
+			$id = sanitize_key( (string) ( $part['id'] ?? '' ) );
+
+			if ( '' === $id ) {
+				continue;
+			}
+
+			$height_prices = is_array( $part['height_prices'] ?? null ) ? $part['height_prices'] : array();
+			$sanitized_height_prices = array();
+
+			foreach ( $height_prices as $height_id => $price ) {
+				$sanitized_height_prices[ sanitize_key( (string) $height_id ) ] = (float) $price;
+			}
+
+			$normalized[] = array(
+				'id'             => $id,
+				'label'          => sanitize_text_field( (string) ( $part['label'] ?? '' ) ),
+				'description'    => sanitize_text_field( (string) ( $part['description'] ?? '' ) ),
+				'image_url'      => esc_url_raw( (string) ( $part['image_url'] ?? '' ) ),
+				'price'          => (float) ( $part['price'] ?? 0 ),
+				'height_prices'  => $sanitized_height_prices,
+				'editable'       => ! empty( $part['editable'] ),
+			);
+		}
+
+		return $normalized;
+	}
+
+	/**
 	 * @param array<int, mixed> $colors Raw color rows.
 	 * @return array<int, array<string, mixed>>
 	 */
@@ -582,5 +684,232 @@ final class ProductStorefrontOptionsBuilder {
 			'%s cm hoog',
 			rtrim( rtrim( number_format( $height_cm, 1, '.', '' ), '0' ), '.' )
 		);
+	}
+
+	/**
+	 * @param array<int, mixed> $groups Raw option groups.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function normalize_storefront_groups( array $groups ): array {
+		$normalized = array();
+
+		foreach ( $groups as $group ) {
+			if ( ! is_array( $group ) ) {
+				continue;
+			}
+
+			$id = sanitize_key( (string) ( $group['id'] ?? '' ) );
+
+			if ( '' === $id ) {
+				continue;
+			}
+
+			$items = array();
+
+			foreach ( is_array( $group['items'] ?? null ) ? $group['items'] : array() as $item ) {
+				if ( ! is_array( $item ) ) {
+					continue;
+				}
+
+				$item_id = sanitize_key( (string) ( $item['id'] ?? '' ) );
+				$label   = sanitize_text_field( (string) ( $item['value'] ?? $item['label'] ?? '' ) );
+
+				if ( '' === $item_id || '' === $label ) {
+					continue;
+				}
+
+				$items[] = array(
+					'id'             => $item_id,
+					'label'          => $label,
+					'image_url'      => esc_url_raw( (string) ( $item['image_url'] ?? '' ) ),
+					'price_modifier' => (float) ( $item['price'] ?? $item['price_modifier'] ?? 0 ),
+					'note'           => sanitize_text_field( (string) ( $item['description'] ?? $item['note'] ?? '' ) ),
+				);
+			}
+
+			if ( empty( $items ) ) {
+				continue;
+			}
+
+			$normalized[] = array(
+				'id'           => $id,
+				'type'         => sanitize_key( (string) ( $group['type'] ?? 'custom' ) ),
+				'label'        => sanitize_text_field( (string) ( $group['label'] ?? ucfirst( $id ) ) ),
+				'default_item' => sanitize_key( (string) ( $group['default_item'] ?? '' ) ),
+				'items'        => $items,
+			);
+		}
+
+		return $normalized;
+	}
+
+	/**
+	 * @param array<string, mixed>             $built  Built options.
+	 * @param array<int, array<string, mixed>> $groups Storefront option groups.
+	 * @return array<string, mixed>
+	 */
+	private function apply_groups_to_legacy_options( array $built, array $groups ): array {
+		foreach ( $groups as $group ) {
+			$type = sanitize_key( (string) ( $group['type'] ?? '' ) );
+			$id   = sanitize_key( (string) ( $group['id'] ?? '' ) );
+
+			if ( $this->is_color_group( $type, $id ) ) {
+				$built['colors']        = $this->group_items_to_color_rows( $group['items'] ?? array() );
+				$built['default_color'] = sanitize_key( (string) ( $group['default_item'] ?? $built['default_color'] ) );
+				continue;
+			}
+
+			if ( $this->is_height_group( $type, $id ) ) {
+				$built['heights']        = $this->group_items_to_height_rows( $group['items'] ?? array() );
+				$built['default_height'] = sanitize_key( (string) ( $group['default_item'] ?? $built['default_height'] ) );
+			}
+		}
+
+		return $built;
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $colors Legacy color rows.
+	 * @param array<int, array<string, mixed>> $heights Legacy height rows.
+	 * @param string                           $default_color Default color ID.
+	 * @param string                           $default_height Default height ID.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function groups_from_legacy_options( array $colors, array $heights, string $default_color, string $default_height ): array {
+		$groups = array();
+
+		if ( ! empty( $colors ) ) {
+			$groups[] = array(
+				'id'           => 'color',
+				'type'         => 'color',
+				'label'        => __( 'Color', 'kitchen-configurator-pro' ),
+				'default_item' => $default_color,
+				'items'        => $this->color_rows_to_group_items( $colors ),
+			);
+		}
+
+		if ( ! empty( $heights ) ) {
+			$groups[] = array(
+				'id'           => 'height',
+				'type'         => 'height',
+				'label'        => __( 'Height', 'kitchen-configurator-pro' ),
+				'default_item' => $default_height,
+				'items'        => $this->height_rows_to_group_items( $heights ),
+			);
+		}
+
+		return $groups;
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $items Group items.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function group_items_to_color_rows( array $items ): array {
+		$rows = array();
+
+		foreach ( $items as $item ) {
+			if ( ! is_array( $item ) ) {
+				continue;
+			}
+
+			$rows[] = array(
+				'id'             => sanitize_key( (string) ( $item['id'] ?? '' ) ),
+				'label'          => sanitize_text_field( (string) ( $item['label'] ?? '' ) ),
+				'image_url'      => esc_url_raw( (string) ( $item['image_url'] ?? '' ) ),
+				'hex_code'       => sanitize_hex_color( (string) ( $item['hex_code'] ?? '' ) ) ?: '',
+				'price_modifier' => (float) ( $item['price_modifier'] ?? 0 ),
+				'note'           => sanitize_text_field( (string) ( $item['note'] ?? '' ) ),
+			);
+		}
+
+		return $rows;
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $items Group items.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function group_items_to_height_rows( array $items ): array {
+		$rows = array();
+
+		foreach ( $items as $item ) {
+			if ( ! is_array( $item ) ) {
+				continue;
+			}
+
+			$rows[] = array(
+				'id'             => sanitize_key( (string) ( $item['id'] ?? '' ) ),
+				'label'          => sanitize_text_field( (string) ( $item['label'] ?? '' ) ),
+				'price_modifier' => (float) ( $item['price_modifier'] ?? 0 ),
+			);
+		}
+
+		return $rows;
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $colors Color rows.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function color_rows_to_group_items( array $colors ): array {
+		$items = array();
+
+		foreach ( $colors as $color ) {
+			if ( ! is_array( $color ) ) {
+				continue;
+			}
+
+			$items[] = array(
+				'id'             => sanitize_key( (string) ( $color['id'] ?? '' ) ),
+				'label'          => sanitize_text_field( (string) ( $color['label'] ?? '' ) ),
+				'image_url'      => esc_url_raw( (string) ( $color['image_url'] ?? '' ) ),
+				'price_modifier' => (float) ( $color['price_modifier'] ?? 0 ),
+				'note'           => sanitize_text_field( (string) ( $color['note'] ?? '' ) ),
+			);
+		}
+
+		return $items;
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $heights Height rows.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function height_rows_to_group_items( array $heights ): array {
+		$items = array();
+
+		foreach ( $heights as $height ) {
+			if ( ! is_array( $height ) ) {
+				continue;
+			}
+
+			$items[] = array(
+				'id'             => sanitize_key( (string) ( $height['id'] ?? '' ) ),
+				'label'          => sanitize_text_field( (string) ( $height['label'] ?? '' ) ),
+				'price_modifier' => (float) ( $height['price_modifier'] ?? 0 ),
+				'note'           => '',
+			);
+		}
+
+		return $items;
+	}
+
+	/**
+	 * @param string $type Group type.
+	 * @param string $id   Group ID.
+	 * @return bool
+	 */
+	private function is_color_group( string $type, string $id ): bool {
+		return 'color' === $type || in_array( $id, array( 'color', 'colors' ), true );
+	}
+
+	/**
+	 * @param string $type Group type.
+	 * @param string $id   Group ID.
+	 * @return bool
+	 */
+	private function is_height_group( string $type, string $id ): bool {
+		return 'height' === $type || in_array( $id, array( 'height', 'heights' ), true );
 	}
 }
