@@ -259,6 +259,7 @@ final class CartPresenter {
 		$action   = sanitize_key( wp_unslash( (string) $_GET['kcp_part_action'] ) );
 		$cart_key = wc_clean( wp_unslash( (string) $_GET['key'] ) );
 		$part_key = sanitize_text_field( wp_unslash( (string) $_GET['part_key'] ) );
+		$part_pos = isset( $_GET['part_pos'] ) ? max( -1, (int) wp_unslash( (string) $_GET['part_pos'] ) ) : -1;
 
 		if ( '' === $cart_key || '' === $part_key || ! function_exists( 'WC' ) || ! WC()->cart ) {
 			return;
@@ -279,7 +280,7 @@ final class CartPresenter {
 		$builder    = $this->breakdown_builder();
 
 		if ( 'duplicate' === $action ) {
-			$parts = $builder->duplicate_part( $parts, $part_key );
+			$parts = $builder->duplicate_part( $parts, $part_key, $part_pos );
 			wc_add_notice( __( 'Artikel gedupliceerd.', 'kitchen-configurator-pro' ) );
 		} elseif ( 'remove' === $action ) {
 			if ( count( $parts ) <= 1 ) {
@@ -289,7 +290,7 @@ final class CartPresenter {
 				exit;
 			}
 
-			$parts = $builder->remove_part( $parts, $part_key );
+			$parts = $builder->remove_part( $parts, $part_key, $part_pos );
 			wc_add_notice( __( 'Artikel verwijderd.', 'kitchen-configurator-pro' ) );
 		} else {
 			return;
@@ -514,7 +515,7 @@ final class CartPresenter {
 		$cart_url = wc_get_cart_url();
 
 		return array_map(
-			static function ( array $part ) use ( $cart_key, $edit_url, $cart_url ): array {
+			static function ( array $part, int $index ) use ( $cart_key, $edit_url, $cart_url ): array {
 				$part_key = (string) ( $part['key'] ?? '' );
 
 				$part['duplicate_url'] = add_query_arg(
@@ -522,6 +523,7 @@ final class CartPresenter {
 						'kcp_part_action' => 'duplicate',
 						'key'             => $cart_key,
 						'part_key'        => $part_key,
+						'part_pos'        => $index,
 					),
 					$cart_url
 				);
@@ -530,6 +532,7 @@ final class CartPresenter {
 						'kcp_part_action' => 'remove',
 						'key'             => $cart_key,
 						'part_key'        => $part_key,
+						'part_pos'        => $index,
 					),
 					$cart_url
 				);
@@ -539,7 +542,8 @@ final class CartPresenter {
 
 				return $part;
 			},
-			$parts
+			$parts,
+			array_keys( $parts )
 		);
 	}
 

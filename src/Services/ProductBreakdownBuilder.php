@@ -164,21 +164,38 @@ final class ProductBreakdownBuilder {
 	/**
 	 * Duplicate a part inside a cart breakdown.
 	 *
-	 * @param array<int, array<string, mixed>> $parts   Existing parts.
-	 * @param string                           $part_key Part key to duplicate.
+	 * @param array<int, array<string, mixed>> $parts      Existing parts.
+	 * @param string                           $part_key    Part key to duplicate.
+	 * @param int                              $part_index  Exact row index from UI.
 	 * @return array<int, array<string, mixed>>
 	 */
-	public function duplicate_part( array $parts, string $part_key ): array {
-		foreach ( $parts as $part ) {
-			if ( (string) ( $part['key'] ?? '' ) !== $part_key ) {
-				continue;
-			}
+	public function duplicate_part( array $parts, string $part_key, int $part_index = -1 ): array {
+		$target_part = null;
 
-			$copy            = $part;
-			$copy['key']     = sanitize_key( (string) ( $part['id'] ?? 'part' ) ) . '-' . wp_generate_password( 6, false, false );
+		if ( $part_index >= 0 && isset( $parts[ $part_index ] ) && is_array( $parts[ $part_index ] ) ) {
+			$candidate = $parts[ $part_index ];
+
+			if ( (string) ( $candidate['key'] ?? '' ) === $part_key ) {
+				$target_part = $candidate;
+			}
+		}
+
+		if ( ! is_array( $target_part ) ) {
+			foreach ( $parts as $part ) {
+				if ( (string) ( $part['key'] ?? '' ) !== $part_key ) {
+					continue;
+				}
+
+				$target_part = $part;
+				break;
+			}
+		}
+
+		if ( is_array( $target_part ) ) {
+			$copy            = $target_part;
+			$copy['key']     = sanitize_key( (string) ( $target_part['id'] ?? 'part' ) ) . '-' . wp_generate_password( 6, false, false );
 			$copy['copy_of'] = $part_key;
 			$parts[]         = $copy;
-			break;
 		}
 
 		return $parts;
@@ -187,11 +204,22 @@ final class ProductBreakdownBuilder {
 	/**
 	 * Remove a part from a cart breakdown.
 	 *
-	 * @param array<int, array<string, mixed>> $parts    Existing parts.
-	 * @param string                           $part_key Part key to remove.
+	 * @param array<int, array<string, mixed>> $parts      Existing parts.
+	 * @param string                           $part_key    Part key to remove.
+	 * @param int                              $part_index  Exact row index from UI.
 	 * @return array<int, array<string, mixed>>
 	 */
-	public function remove_part( array $parts, string $part_key ): array {
+	public function remove_part( array $parts, string $part_key, int $part_index = -1 ): array {
+		if ( $part_index >= 0 && isset( $parts[ $part_index ] ) && is_array( $parts[ $part_index ] ) ) {
+			$candidate = $parts[ $part_index ];
+
+			if ( (string) ( $candidate['key'] ?? '' ) === $part_key ) {
+				unset( $parts[ $part_index ] );
+
+				return array_values( $parts );
+			}
+		}
+
 		return array_values(
 			array_filter(
 				$parts,
