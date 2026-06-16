@@ -87,13 +87,15 @@ final class ProductBreakdownBuilder {
 			}
 
 			$parts[] = array(
-				'key'         => $id,
-				'id'          => $id,
-				'label'       => (string) ( $definition['label'] ?? '' ),
-				'description' => (string) ( $definition['description'] ?? '' ),
-				'image_url'   => esc_url_raw( (string) ( $definition['image_url'] ?? '' ) ),
-				'price'       => $price,
-				'editable'    => ! empty( $definition['editable'] ),
+				'key'           => $id,
+				'id'            => $id,
+				'label'         => (string) ( $definition['label'] ?? '' ),
+				'description'   => (string) ( $definition['description'] ?? '' ),
+				'image_url'     => esc_url_raw( (string) ( $definition['image_url'] ?? '' ) ),
+				'price'         => $price,
+				'editable'      => ! empty( $definition['editable'] ),
+				'selected_item' => sanitize_key( (string) ( $definition['selected_item'] ?? '' ) ),
+				'items'         => is_array( $definition['items'] ?? null ) ? $definition['items'] : array(),
 			);
 		}
 
@@ -162,6 +164,44 @@ final class ProductBreakdownBuilder {
 	}
 
 	/**
+	 * Apply a selected variant item to a cart breakdown part.
+	 *
+	 * @param array<string, mixed>             $part  Existing cart part row.
+	 * @param string                           $item_id Selected item ID.
+	 * @param array<int, array<string, mixed>> $items Available item rows.
+	 * @return array<string, mixed>|null
+	 */
+	public function apply_part_item( array $part, string $item_id, array $items ): ?array {
+		if ( '' === $item_id ) {
+			return null;
+		}
+
+		foreach ( $items as $item ) {
+			if ( ! is_array( $item ) ) {
+				continue;
+			}
+
+			if ( sanitize_key( (string) ( $item['id'] ?? '' ) ) !== $item_id ) {
+				continue;
+			}
+
+			$part['selected_item'] = $item_id;
+			$part['price']         = (float) ( $item['price'] ?? $part['price'] ?? 0 );
+			$part['description']   = sanitize_text_field( (string) ( $item['description'] ?? $item['value'] ?? $part['description'] ?? '' ) );
+
+			$image_url = esc_url_raw( (string) ( $item['image_url'] ?? '' ) );
+
+			if ( '' !== $image_url ) {
+				$part['image_url'] = $image_url;
+			}
+
+			return $part;
+		}
+
+		return null;
+	}
+
+	/**
 	 * Duplicate a part inside a cart breakdown.
 	 *
 	 * @param array<int, array<string, mixed>> $parts      Existing parts.
@@ -171,18 +211,19 @@ final class ProductBreakdownBuilder {
 	 */
 	public function duplicate_part( array $parts, string $part_key, int $part_index = -1 ): array {
 		$target_part = null;
+		$part_key    = sanitize_key( $part_key );
 
 		if ( $part_index >= 0 && isset( $parts[ $part_index ] ) && is_array( $parts[ $part_index ] ) ) {
 			$candidate = $parts[ $part_index ];
 
-			if ( (string) ( $candidate['key'] ?? '' ) === $part_key ) {
+			if ( sanitize_key( (string) ( $candidate['key'] ?? '' ) ) === $part_key ) {
 				$target_part = $candidate;
 			}
 		}
 
 		if ( ! is_array( $target_part ) ) {
 			foreach ( $parts as $part ) {
-				if ( (string) ( $part['key'] ?? '' ) !== $part_key ) {
+				if ( sanitize_key( (string) ( $part['key'] ?? '' ) ) !== $part_key ) {
 					continue;
 				}
 
@@ -193,7 +234,9 @@ final class ProductBreakdownBuilder {
 
 		if ( is_array( $target_part ) ) {
 			$copy            = $target_part;
-			$copy['key']     = sanitize_key( (string) ( $target_part['id'] ?? 'part' ) ) . '-' . wp_generate_password( 6, false, false );
+			$copy['key']     = sanitize_key(
+				sanitize_key( (string) ( $target_part['id'] ?? 'part' ) ) . '-' . wp_generate_password( 6, false, false )
+			);
 			$copy['copy_of'] = $part_key;
 			$parts[]         = $copy;
 		}
@@ -210,10 +253,12 @@ final class ProductBreakdownBuilder {
 	 * @return array<int, array<string, mixed>>
 	 */
 	public function remove_part( array $parts, string $part_key, int $part_index = -1 ): array {
+		$part_key = sanitize_key( $part_key );
+
 		if ( $part_index >= 0 && isset( $parts[ $part_index ] ) && is_array( $parts[ $part_index ] ) ) {
 			$candidate = $parts[ $part_index ];
 
-			if ( (string) ( $candidate['key'] ?? '' ) === $part_key ) {
+			if ( sanitize_key( (string) ( $candidate['key'] ?? '' ) ) === $part_key ) {
 				unset( $parts[ $part_index ] );
 
 				return array_values( $parts );
@@ -223,7 +268,7 @@ final class ProductBreakdownBuilder {
 		return array_values(
 			array_filter(
 				$parts,
-				static fn ( array $part ): bool => (string) ( $part['key'] ?? '' ) !== $part_key
+				static fn ( array $part ): bool => sanitize_key( (string) ( $part['key'] ?? '' ) ) !== $part_key
 			)
 		);
 	}

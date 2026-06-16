@@ -17,6 +17,8 @@ $groups           = $presenter->get_display_groups();
 $summary          = $presenter->get_configuration_summary();
 $plinth_lines     = $presenter->get_plinth_lines();
 $delivery_weeks   = $presenter->get_delivery_weeks();
+$design_check     = $presenter->get_design_check_view();
+$cart_base_total  = $presenter->get_cart_base_total();
 $item_count       = $presenter->get_item_count();
 $cart_total       = $presenter->get_formatted_total();
 $empty_cart_url   = $presenter->get_empty_cart_url();
@@ -39,10 +41,10 @@ do_action( 'woocommerce_before_cart' );
 		</div>
 		<?php if ( $item_count > 0 ) : ?>
 			<div class="kcp-cart__header-actions">
-				<a href="<?php echo esc_url( $shop_url ); ?>" class="kcp-cart__save">
+				<button type="button" class="kcp-cart__save" data-kcp-open-savecart>
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 2l2.4 4.8L20 7.5l-3.5 3.4.8 5.1L12 13.8 6.7 16l.8-5.1L4 7.5l5.6-.7z"/></svg>
 					<?php esc_html_e( 'winkelwagen opslaan', 'kitchen-configurator-pro' ); ?>
-				</a>
+				</button>
 				<a href="<?php echo esc_url( $shop_url ); ?>" class="kcp-cart__add-cabinet">
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
 					<?php esc_html_e( 'nieuwe kast toevoegen', 'kitchen-configurator-pro' ); ?>
@@ -237,7 +239,7 @@ do_action( 'woocommerce_before_cart' );
 
 		<section class="kcp-cart-extra-security">
 			<h3 class="kcp-cart-extra-security__title"><?php esc_html_e( 'extra zekerheid', 'kitchen-configurator-pro' ); ?></h3>
-			<div class="kcp-cart-design-check">
+			<div class="kcp-cart-design-check" data-kcp-design-check data-design-check-price="<?php echo esc_attr( (string) (float) ( $design_check['price'] ?? 0 ) ); ?>">
 				<div class="kcp-cart-design-check__inner">
 					<span class="kcp-cart-design-check__badge"><?php esc_html_e( 'Extra zekerheid', 'kitchen-configurator-pro' ); ?></span>
 					<h4 class="kcp-cart-design-check__title"><?php esc_html_e( 'laat jouw ontwerp controleren', 'kitchen-configurator-pro' ); ?></h4>
@@ -246,15 +248,15 @@ do_action( 'woocommerce_before_cart' );
 					</p>
 					<div class="kcp-cart-design-check__choices">
 						<label class="kcp-cart-design-check__choice">
-							<input type="radio" name="kcp_design_check" value="yes">
+							<input type="radio" name="kcp_design_check" value="yes" <?php checked( (string) ( $design_check['selected'] ?? 'no' ), 'yes' ); ?>>
 							<span><?php esc_html_e( 'ja dat wil ik', 'kitchen-configurator-pro' ); ?></span>
 						</label>
 						<label class="kcp-cart-design-check__choice">
-							<input type="radio" name="kcp_design_check" value="no" checked>
+							<input type="radio" name="kcp_design_check" value="no" <?php checked( (string) ( $design_check['selected'] ?? 'no' ), 'no' ); ?>>
 							<span><?php esc_html_e( 'nee dat wil ik niet', 'kitchen-configurator-pro' ); ?></span>
 						</label>
 					</div>
-					<span class="kcp-cart-design-check__price">+ 75,-</span>
+					<span class="kcp-cart-design-check__price" data-kcp-design-check-price><?php echo esc_html( (string) ( $design_check['price_label'] ?? '' ) ); ?></span>
 				</div>
 			</div>
 		</section>
@@ -266,24 +268,129 @@ do_action( 'woocommerce_before_cart' );
 
 	<div class="kcp-cart__total-wrap">
 		<span class="kcp-cart__total-label"><?php esc_html_e( 'totaalbedrag', 'kitchen-configurator-pro' ); ?></span>
-		<strong class="kcp-cart__total-value">€ <?php echo esc_html( $cart_total ); ?></strong>
+		<strong
+			class="kcp-cart__total-value"
+			data-kcp-cart-total
+			data-base-total="<?php echo esc_attr( (string) $cart_base_total ); ?>"
+			data-design-check-price="<?php echo esc_attr( (string) (float) ( $design_check['price'] ?? 0 ) ); ?>"
+			data-design-check-selected="<?php echo esc_attr( (string) ( $design_check['selected'] ?? 'no' ) ); ?>"
+		>€ <?php echo esc_html( $cart_total ); ?></strong>
 	</div>
 
 	<footer class="kcp-cart__footer">
-		<a href="<?php echo esc_url( $shop_url ); ?>" class="kcp-cart__save kcp-cart__save--footer">
+		<button type="button" class="kcp-cart__save kcp-cart__save--footer" data-kcp-open-savecart>
 			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 2l2.4 4.8L20 7.5l-3.5 3.4.8 5.1L12 13.8 6.7 16l.8-5.1L4 7.5l5.6-.7z"/></svg>
 			<?php esc_html_e( 'winkelwagen opslaan', 'kitchen-configurator-pro' ); ?>
-		</a>
+		</button>
 		<div class="kcp-cart__footer-actions">
-			<a href="<?php echo esc_url( home_url( '/contact/' ) ); ?>" class="kcp-cart__action kcp-cart__action--secondary">
+			<button type="button" class="kcp-cart__action kcp-cart__action--secondary" data-kcp-open-afspraak>
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
 				<?php esc_html_e( 'plan een afspraak', 'kitchen-configurator-pro' ); ?>
-			</a>
+			</button>
 			<a href="<?php echo esc_url( $checkout_url ); ?>" class="kcp-cart__action kcp-cart__action--primary">
 				<?php esc_html_e( 'bestellen', 'kitchen-configurator-pro' ); ?>
 			</a>
 		</div>
 	</footer>
+</div>
+
+<!-- Afspraak modal -->
+<div class="kcp-afspraak-modal" id="kcp-afspraak-modal" role="dialog" aria-modal="true" aria-labelledby="kcp-afspraak-title" hidden>
+	<div class="kcp-afspraak-modal__backdrop" data-kcp-close-afspraak></div>
+	<div class="kcp-afspraak-modal__panel">
+		<button type="button" class="kcp-afspraak-modal__close" data-kcp-close-afspraak aria-label="<?php esc_attr_e( 'Sluiten', 'kitchen-configurator-pro' ); ?>">
+			<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="display:block;fill:none;stroke:#333;stroke-width:2"><path d="M1 1l12 12M13 1L1 13"/></svg>
+		</button>
+
+		<h2 class="kcp-afspraak-modal__title" id="kcp-afspraak-title">
+			<?php esc_html_e( 'plan een bezoekje aan onze showroom', 'kitchen-configurator-pro' ); ?>
+		</h2>
+		<p class="kcp-afspraak-modal__subtitle">
+			<?php esc_html_e( 'en wij zorgen dat er iemand voor je klaarstaat om mee te kijken naar de mogelijkheden', 'kitchen-configurator-pro' ); ?>
+		</p>
+
+		<form class="kcp-afspraak-modal__form" id="kcp-afspraak-form" novalidate>
+			<?php wp_nonce_field( 'kcp_afspraak', 'kcp_afspraak_nonce' ); ?>
+
+			<div class="kcp-afspraak-modal__field">
+				<input type="text" name="kcp_naam" placeholder="<?php esc_attr_e( 'naam', 'kitchen-configurator-pro' ); ?>" class="kcp-afspraak-modal__input" required autocomplete="name">
+			</div>
+			<div class="kcp-afspraak-modal__field">
+				<input type="tel" name="kcp_telefoon" placeholder="<?php esc_attr_e( 'telefoon nummer', 'kitchen-configurator-pro' ); ?>" class="kcp-afspraak-modal__input" required autocomplete="tel">
+			</div>
+			<div class="kcp-afspraak-modal__field">
+				<input type="email" name="kcp_email" placeholder="<?php esc_attr_e( 'e-mailadres', 'kitchen-configurator-pro' ); ?>" class="kcp-afspraak-modal__input" required autocomplete="email">
+			</div>
+			<div class="kcp-afspraak-modal__field">
+				<input type="text" name="kcp_woonplaats" placeholder="<?php esc_attr_e( 'woonplaats', 'kitchen-configurator-pro' ); ?>" class="kcp-afspraak-modal__input" autocomplete="address-level2">
+			</div>
+			<div class="kcp-afspraak-modal__field">
+				<input type="text" name="kcp_opmerking" placeholder="<?php esc_attr_e( 'opmerking', 'kitchen-configurator-pro' ); ?>" class="kcp-afspraak-modal__input">
+			</div>
+
+			<div class="kcp-afspraak-modal__bottom">
+				<div class="kcp-afspraak-modal__week-wrap">
+					<select name="kcp_week" class="kcp-afspraak-modal__week" required>
+						<option value=""><?php esc_html_e( 'selecteer een week', 'kitchen-configurator-pro' ); ?></option>
+						<?php foreach ( $delivery_weeks as $week ) : ?>
+							<option value="<?php echo esc_attr( (string) ( $week['id'] ?? '' ) ); ?>">
+								<?php echo esc_html( (string) ( $week['label'] ?? '' ) ); ?>
+							</option>
+						<?php endforeach; ?>
+					</select>
+				</div>
+				<button type="submit" class="kcp-afspraak-modal__submit" aria-label="<?php esc_attr_e( 'Versturen', 'kitchen-configurator-pro' ); ?>">
+					<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" style="display:block;fill:#fff;color:#fff;flex-shrink:0"><path d="M2 21l21-9L2 3v7l15 2-15 2z" fill="#fff"/></svg>
+				</button>
+			</div>
+
+			<p class="kcp-afspraak-modal__success" hidden><?php esc_html_e( 'Bedankt! We nemen snel contact met je op.', 'kitchen-configurator-pro' ); ?></p>
+			<p class="kcp-afspraak-modal__error" hidden><?php esc_html_e( 'Er is iets misgegaan. Probeer het opnieuw.', 'kitchen-configurator-pro' ); ?></p>
+		</form>
+	</div>
+</div>
+
+
+
+<!-- Confirm modal (leegmaken / verwijderen) -->
+<div class="kcp-confirm-modal" id="kcp-confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="kcp-confirm-msg" hidden>
+	<div class="kcp-confirm-modal__backdrop" data-kcp-close-confirm></div>
+	<div class="kcp-confirm-modal__panel">
+		<p class="kcp-confirm-modal__message" id="kcp-confirm-msg"></p>
+		<div class="kcp-confirm-modal__actions">
+			<button type="button" class="kcp-confirm-modal__btn kcp-confirm-modal__btn--cancel" data-kcp-close-confirm>
+				<?php esc_html_e( 'nee, annuleer', 'kitchen-configurator-pro' ); ?>
+			</button>
+			<a href="#" class="kcp-confirm-modal__btn kcp-confirm-modal__btn--confirm" id="kcp-confirm-proceed"></a>
+		</div>
+	</div>
+</div>
+
+<!-- Save cart modal -->
+<div class="kcp-savecart-modal" id="kcp-savecart-modal" role="dialog" aria-modal="true" aria-labelledby="kcp-savecart-title" hidden>
+	<div class="kcp-savecart-modal__backdrop" data-kcp-close-savecart></div>
+	<div class="kcp-savecart-modal__panel">
+		<button type="button" class="kcp-savecart-modal__close" data-kcp-close-savecart aria-label="<?php esc_attr_e( 'Sluiten', 'kitchen-configurator-pro' ); ?>">
+			<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M1 1l12 12M13 1L1 13"/></svg>
+		</button>
+
+		<h2 class="kcp-savecart-modal__title" id="kcp-savecart-title"><?php esc_html_e( 'Winkelwagen opslaan', 'kitchen-configurator-pro' ); ?></h2>
+		<p class="kcp-savecart-modal__lead"><?php esc_html_e( 'Wil je volgende keer direct verder waar je gebleven was? Dan helpen we je graag verder...', 'kitchen-configurator-pro' ); ?></p>
+		<p class="kcp-savecart-modal__copy"><?php esc_html_e( 'Geheel vrijblijvend kun je je samengestelde winkelwagen 2 maanden opslaan op onze servers. Wij sturen je een unieke link door waarmee je op ieder moment toegang krijgt.', 'kitchen-configurator-pro' ); ?></p>
+
+		<form class="kcp-savecart-modal__form" id="kcp-savecart-form" novalidate>
+			<div class="kcp-savecart-modal__row">
+				<div class="kcp-savecart-modal__field">
+					<input type="email" name="kcp_savecart_email" class="kcp-savecart-modal__input" placeholder="<?php esc_attr_e( 'E-mailadres', 'kitchen-configurator-pro' ); ?>" required autocomplete="email">
+				</div>
+				<button type="submit" class="kcp-savecart-modal__submit" aria-label="<?php esc_attr_e( 'Versturen', 'kitchen-configurator-pro' ); ?>">
+					<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+				</button>
+			</div>
+			<div class="kcp-savecart-modal__notice"><?php esc_html_e( 'Opgegeven e-mail adres wordt uitsluitend gebruikt voor onze link-service en wordt niet gebruikt voor commerciële doeleinden!', 'kitchen-configurator-pro' ); ?></div>
+			<p class="kcp-savecart-modal__success" hidden><?php esc_html_e( 'Dank je! We hebben je opslaglink verzonden.', 'kitchen-configurator-pro' ); ?></p>
+		</form>
+	</div>
 </div>
 
 <?php do_action( 'woocommerce_after_cart' ); ?>

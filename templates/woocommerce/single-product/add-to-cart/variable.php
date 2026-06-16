@@ -8,9 +8,14 @@
 
 defined( 'ABSPATH' ) || exit;
 
-global $product;
+	global $product;
 
-use KitchenConfiguratorPro\Services\WooVariationOptionsBuilder;
+	use KitchenConfiguratorPro\Integration\WooCommerce\ProductOptionsPresenter;
+	use KitchenConfiguratorPro\Services\WooVariationOptionsBuilder;
+
+	/** @var ProductOptionsPresenter $options_presenter */
+	$options_presenter = kcp_plugin()->container()->get( ProductOptionsPresenter::class );
+	$part_edit_mode    = $options_presenter->is_part_edit_mode();
 
 $attribute_keys  = array_keys( $attributes );
 $variations_json = wp_json_encode( $available_variations );
@@ -43,7 +48,7 @@ do_action( 'woocommerce_before_add_to_cart_form' );
 		<p class="stock out-of-stock"><?php echo esc_html( apply_filters( 'woocommerce_out_of_stock_message', __( 'This product is currently out of stock and unavailable.', 'woocommerce' ) ) ); ?></p>
 	<?php else : ?>
 		<?php
-		if ( $has_kcp_options ) :
+		if ( $has_kcp_options && ! $part_edit_mode ) :
 			$wc_variations_mode = ! $preset_mode && ! empty( $options['use_wc_variations'] );
 			include KCP_PLUGIN_DIR . 'templates/woocommerce/partials/product-options.php';
 		endif;

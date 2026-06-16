@@ -42,6 +42,7 @@ final class SettingsPage {
 				'currency'            => 'EUR',
 				'vat_rate'            => 0,
 				'quote_validity_days' => 30,
+				'design_check_price'  => 75,
 			)
 		);
 
@@ -52,10 +53,14 @@ final class SettingsPage {
 					'message' => __( 'Security check failed.', 'kitchen-configurator-pro' ),
 				);
 			} else {
-				$settings = array(
-					'currency'            => sanitize_text_field( wp_unslash( (string) ( $_POST['currency'] ?? 'EUR' ) ) ),
-					'vat_rate'            => max( 0, (float) ( $_POST['vat_rate'] ?? 0 ) ),
-					'quote_validity_days' => max( 1, (int) ( $_POST['quote_validity_days'] ?? 30 ) ),
+				$settings = array_merge(
+					$settings,
+					array(
+						'currency'            => sanitize_text_field( wp_unslash( (string) ( $_POST['currency'] ?? 'EUR' ) ) ),
+						'vat_rate'            => max( 0, (float) ( $_POST['vat_rate'] ?? 0 ) ),
+						'quote_validity_days' => max( 1, (int) ( $_POST['quote_validity_days'] ?? 30 ) ),
+						'design_check_price'  => max( 0, (float) ( $_POST['design_check_price'] ?? 75 ) ),
+					)
 				);
 
 				update_option( 'kcp_settings', $settings, false );

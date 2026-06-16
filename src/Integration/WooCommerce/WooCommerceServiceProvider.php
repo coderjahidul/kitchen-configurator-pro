@@ -18,6 +18,7 @@ use KitchenConfiguratorPro\Repositories\ProductPresetRepository;
 use KitchenConfiguratorPro\Services\CartIntegrationService;
 use KitchenConfiguratorPro\Services\ConfigurationService;
 use KitchenConfiguratorPro\Services\Pricing\PricingEngine;
+use KitchenConfiguratorPro\Services\PartEditViewBuilder;
 use KitchenConfiguratorPro\Services\ProductBreakdownBuilder;
 use KitchenConfiguratorPro\Services\ProductStorefrontOptionsBuilder;
 use KitchenConfiguratorPro\Services\WooVariationOptionsBuilder;
@@ -109,6 +110,11 @@ final class WooCommerceServiceProvider {
 		$this->container->singleton(
 			ProductBreakdownBuilder::class,
 			static fn () => new ProductBreakdownBuilder()
+		);
+
+		$this->container->singleton(
+			PartEditViewBuilder::class,
+			static fn () => new PartEditViewBuilder()
 		);
 
 		$this->container->singleton(

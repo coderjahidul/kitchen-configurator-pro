@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace KitchenConfiguratorPro\Integration\WooCommerce;
 
+use KitchenConfiguratorPro\Integration\WooCommerce\ProductOptionsPresenter;
 use KitchenConfiguratorPro\Services\WooVariationOptionsBuilder;
 
 /**
@@ -139,15 +140,39 @@ final class ShopPresenter {
 			KCP_VERSION
 		);
 
-		if ( is_product() ) {
+		if ( ! is_product() ) {
+			return;
+		}
+
+		/** @var ProductOptionsPresenter $options_presenter */
+		$options_presenter = kcp_plugin()->container()->get( ProductOptionsPresenter::class );
+
+		if ( $options_presenter->is_part_edit_request() ) {
+			wp_enqueue_style(
+				'kcp-part-edit',
+				KCP_PLUGIN_URL . 'assets/frontend/css/part-edit.css',
+				array( 'kcp-shop' ),
+				KCP_VERSION
+			);
+
 			wp_enqueue_script(
-				'kcp-product-options',
-				KCP_PLUGIN_URL . 'assets/frontend/js/product-options.js',
-				array( 'jquery', 'wc-add-to-cart-variation' ),
+				'kcp-part-edit',
+				KCP_PLUGIN_URL . 'assets/frontend/js/part-edit.js',
+				array(),
 				KCP_VERSION,
 				true
 			);
+
+			return;
 		}
+
+		wp_enqueue_script(
+			'kcp-product-options',
+			KCP_PLUGIN_URL . 'assets/frontend/js/product-options.js',
+			array( 'jquery' ),
+			KCP_VERSION,
+			true
+		);
 	}
 
 	/**

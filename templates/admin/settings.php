@@ -68,6 +68,23 @@ defined( 'ABSPATH' ) || exit;
 					/>
 				</td>
 			</tr>
+			<tr>
+				<th scope="row">
+					<label for="kcp-design-check-price"><?php esc_html_e( 'Design check price', 'kitchen-configurator-pro' ); ?></label>
+				</th>
+				<td>
+					<input
+						type="number"
+						name="design_check_price"
+						id="kcp-design-check-price"
+						class="small-text"
+						value="<?php echo esc_attr( (string) ( $settings['design_check_price'] ?? 75 ) ); ?>"
+						min="0"
+						step="1"
+					/>
+					<p class="description"><?php esc_html_e( 'Price added to the cart when the customer selects design review on the cart page.', 'kitchen-configurator-pro' ); ?></p>
+				</td>
+			</tr>
 		</table>
 
 		<p class="submit">

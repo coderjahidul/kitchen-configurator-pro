@@ -309,8 +309,25 @@ function initVariationOptions( root ) {
 	$form.trigger( 'check_variations' );
 }
 
+function initPartEditOptions( root ) {
+	const itemInput = document.getElementById( 'kcp-selected-part-item' );
+
+	initOptionButtons( root, ( button ) => {
+		if ( itemInput ) {
+			itemInput.value = button.dataset.kcpOptionId || '';
+		}
+	} );
+}
+
 document.addEventListener( 'DOMContentLoaded', () => {
 	initQuantityStepper();
+
+	const partEditRoot = document.querySelector( '[data-kcp-part-edit]' );
+
+	if ( partEditRoot ) {
+		initPartEditOptions( partEditRoot );
+		return;
+	}
 
 	const root = document.querySelector( '.kcp-product-options' );
 

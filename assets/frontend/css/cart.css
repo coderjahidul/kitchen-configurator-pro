@@ -99,6 +99,12 @@ body.kcp-cart-active .woocommerce-notices-wrapper:not(:empty) {
 	white-space: nowrap;
 }
 
+button.kcp-cart__save,
+button.kcp-cart__action {
+	appearance: none;
+	cursor: pointer;
+}
+
 .kcp-cart__save {
 	border: 1px solid var(--kcp-cart-border);
 	background: var(--kcp-cart-card);
@@ -302,16 +308,26 @@ body.kcp-cart-active .woocommerce-notices-wrapper:not(:empty) {
 }
 
 .kcp-cart-breakdown__action {
-	font-size: 0.82rem;
-	color: var(--kcp-cart-text);
-	text-decoration: underline;
-	text-transform: lowercase;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 40px;
+	padding: 0 22px;
+	border-radius: 999px;
+	border: 1px solid #e3e3e3;
+	background: #f3f3f3;
+	font-size: 0.95rem;
+	font-weight: 500;
+	color: #111;
+	text-decoration: none;
 	white-space: nowrap;
 	cursor: pointer;
+	transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .kcp-cart-breakdown__action:hover {
-	opacity: 0.75;
+	background: #ececec;
+	border-color: #d9d9d9;
 }
 
 .kcp-cart-breakdown__list {
@@ -760,4 +776,452 @@ body.kcp-cart-active .woocommerce-notices-wrapper:not(:empty) {
 		flex-direction: column;
 		align-items: flex-start;
 	}
+}
+
+/* ── Afspraak modal ─────────────────────────────────────────────── */
+.kcp-afspraak-modal {
+	position: fixed !important;
+	top: 0 !important;
+	left: 0 !important;
+	right: 0 !important;
+	bottom: 0 !important;
+	width: 100% !important;
+	height: 100% !important;
+	z-index: 999999 !important;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.kcp-afspraak-modal[hidden] {
+	display: none !important;
+}
+
+.kcp-afspraak-modal__backdrop {
+	position: absolute;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.6);
+	cursor: pointer;
+}
+
+.kcp-afspraak-modal__panel {
+	position: relative;
+	z-index: 1;
+	width: min(580px, calc(100vw - 32px));
+	max-height: calc(100vh - 48px);
+	overflow-y: auto;
+	background: #fff;
+	border-radius: 16px;
+	padding: 36px 36px 32px;
+	box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+}
+
+.kcp-afspraak-modal__close {
+	position: absolute;
+	top: 16px;
+	right: 16px;
+	width: 36px;
+	height: 36px;
+	border: none !important;
+	border-radius: 50%;
+	background: #e5e5e5 !important;
+	color: #333 !important;
+	font-size: 1.1rem;
+	line-height: 1;
+	cursor: pointer;
+	display: flex !important;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+}
+
+.kcp-afspraak-modal__close:hover {
+	background: #d0d0d0 !important;
+}
+
+.kcp-afspraak-modal__close svg {
+	display: block;
+	stroke: #333 !important;
+}
+
+.kcp-afspraak-modal__title {
+	margin: 0 0 8px;
+	font-size: 1.05rem;
+	font-weight: 700;
+	text-transform: lowercase;
+	line-height: 1.3;
+	padding-right: 40px;
+}
+
+.kcp-afspraak-modal__subtitle {
+	margin: 0 0 28px;
+	font-size: 0.86rem;
+	color: #555;
+	line-height: 1.5;
+}
+
+.kcp-afspraak-modal__field {
+	border-bottom: 1px solid #ccc;
+	margin-bottom: 4px;
+}
+
+.kcp-afspraak-modal__input {
+	display: block !important;
+	width: 100% !important;
+	padding: 12px 4px !important;
+	border: none !important;
+	border-radius: 0 !important;
+	outline: none !important;
+	box-shadow: none !important;
+	font-size: 0.88rem !important;
+	color: #111 !important;
+	background: transparent !important;
+}
+
+.kcp-afspraak-modal__input:focus {
+	outline: none !important;
+	box-shadow: none !important;
+}
+
+.kcp-afspraak-modal__input::placeholder {
+	color: #111 !important;
+	text-transform: lowercase;
+}
+
+.kcp-afspraak-modal__bottom {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-top: 24px;
+}
+
+.kcp-afspraak-modal__week-wrap {
+	flex: 1;
+}
+
+.kcp-afspraak-modal__week {
+	width: 100%;
+	padding: 14px 20px;
+	border: 1px solid #ccc;
+	border-radius: 999px;
+	background: #f5f5f5;
+	font-size: 0.88rem;
+	color: #111;
+	appearance: none;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23666' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 16px center;
+	cursor: pointer;
+}
+
+.kcp-afspraak-modal__submit {
+	flex-shrink: 0;
+	width: 52px;
+	height: 52px;
+	border: none;
+	border-radius: 50%;
+	background: #111 !important;
+	color: #fff !important;
+	display: flex !important;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: background 0.15s;
+	padding: 0;
+	line-height: 1;
+}
+
+.kcp-afspraak-modal__submit:hover {
+	background: #333 !important;
+}
+
+.kcp-afspraak-modal__submit svg {
+	display: block;
+	fill: #fff !important;
+	color: #fff !important;
+	width: 20px;
+	height: 20px;
+	flex-shrink: 0;
+}
+
+.kcp-afspraak-modal__success {
+	margin-top: 16px;
+	color: #28a745;
+	font-size: 0.88rem;
+}
+
+.kcp-afspraak-modal__error {
+	margin-top: 16px;
+	color: #dc3545;
+	font-size: 0.88rem;
+}
+
+@media (max-width: 480px) {
+	.kcp-afspraak-modal__panel {
+		padding: 28px 20px 24px;
+	}
+}
+
+/* ── Save cart modal ─────────────────────────────────────────────── */
+.kcp-savecart-modal {
+	position: fixed !important;
+	inset: 0 !important;
+	width: 100% !important;
+	height: 100% !important;
+	z-index: 999999 !important;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.kcp-savecart-modal[hidden] {
+	display: none !important;
+}
+
+.kcp-savecart-modal__backdrop {
+	position: absolute;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.6);
+	cursor: pointer;
+}
+
+.kcp-savecart-modal__panel {
+	position: relative;
+	z-index: 1;
+	width: min(660px, calc(100vw - 32px));
+	background: #fff;
+	border-radius: 16px;
+	box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+	padding: 36px 0 0;
+	overflow: hidden;
+}
+
+.kcp-savecart-modal__close {
+	position: absolute;
+	top: 16px;
+	right: 16px;
+	width: 36px;
+	height: 36px;
+	border: none !important;
+	border-radius: 50%;
+	background: #b9b7ad !important;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	padding: 0;
+}
+
+.kcp-savecart-modal__close svg {
+	display: block;
+	fill: none;
+	stroke: #fff;
+	stroke-width: 2;
+}
+
+.kcp-savecart-modal__title,
+.kcp-savecart-modal__lead,
+.kcp-savecart-modal__copy,
+.kcp-savecart-modal__row {
+	padding-left: 46px;
+	padding-right: 46px;
+}
+
+.kcp-savecart-modal__title {
+	margin: 0 0 18px;
+	font-size: 2rem;
+	font-weight: 700;
+}
+
+.kcp-savecart-modal__lead {
+	margin: 0 0 22px;
+	font-size: 1.07rem;
+	line-height: 1.5;
+}
+
+.kcp-savecart-modal__copy {
+	margin: 0 0 28px;
+	font-size: 1.03rem;
+	line-height: 1.45;
+}
+
+.kcp-savecart-modal__row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 18px;
+}
+
+.kcp-savecart-modal__field {
+	flex: 1;
+	border-bottom: 1px solid #1f1f1f;
+}
+
+.kcp-savecart-modal__input {
+	display: block;
+	width: 100%;
+	border: none !important;
+	background: transparent !important;
+	padding: 10px 0;
+	font-size: 2rem;
+	line-height: 1.2;
+	outline: none !important;
+	box-shadow: none !important;
+}
+
+.kcp-savecart-modal__input::placeholder {
+	color: #1f1f1f;
+}
+
+.kcp-savecart-modal__submit {
+	width: 80px;
+	height: 80px;
+	flex-shrink: 0;
+	border: none !important;
+	border-radius: 50%;
+	background: #020202 !important;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	padding: 0;
+}
+
+.kcp-savecart-modal__submit svg {
+	fill: #fff;
+	width: 28px;
+	height: 28px;
+}
+
+.kcp-savecart-modal__notice {
+	margin-top: 10px;
+	padding: 28px 46px 36px;
+	border-top: 6px solid #e7e8ec;
+	font-size: 0.98rem;
+	line-height: 1.45;
+}
+
+.kcp-savecart-modal__success {
+	margin: 0;
+	padding: 0 46px 26px;
+	color: #28a745;
+	font-size: 0.95rem;
+}
+
+@media (max-width: 640px) {
+	.kcp-savecart-modal__title,
+	.kcp-savecart-modal__lead,
+	.kcp-savecart-modal__copy,
+	.kcp-savecart-modal__row {
+		padding-left: 20px;
+		padding-right: 20px;
+	}
+
+	.kcp-savecart-modal__title {
+		font-size: 1.5rem;
+	}
+
+	.kcp-savecart-modal__input {
+		font-size: 1.3rem;
+	}
+
+	.kcp-savecart-modal__submit {
+		width: 60px;
+		height: 60px;
+	}
+
+	.kcp-savecart-modal__notice,
+	.kcp-savecart-modal__success {
+		padding-left: 20px;
+		padding-right: 20px;
+	}
+}
+
+/* ── Confirm modal ─────────────────────────────────────────── */
+.kcp-confirm-modal {
+	position: fixed !important;
+	inset: 0 !important;
+	z-index: 999999 !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+}
+
+.kcp-confirm-modal[hidden] {
+	display: none !important;
+}
+
+.kcp-confirm-modal__backdrop {
+	position: absolute !important;
+	inset: 0 !important;
+	background: rgba( 0, 0, 0, 0.55 ) !important;
+	cursor: pointer !important;
+}
+
+.kcp-confirm-modal__panel {
+	position: relative !important;
+	z-index: 1 !important;
+	background: #fff !important;
+	border-radius: 20px !important;
+	box-shadow: 0 8px 40px rgba( 0, 0, 0, 0.18 ) !important;
+	padding: 40px 36px 32px !important;
+	max-width: 420px !important;
+	width: calc( 100% - 40px ) !important;
+	text-align: center !important;
+}
+
+.kcp-confirm-modal__message {
+	font-size: 18px !important;
+	font-weight: 600 !important;
+	color: #111 !important;
+	line-height: 1.45 !important;
+	margin: 0 0 28px !important;
+}
+
+.kcp-confirm-modal__actions {
+	display: flex !important;
+	gap: 12px !important;
+	justify-content: center !important;
+}
+
+.kcp-confirm-modal__btn {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	padding: 14px 28px !important;
+	border-radius: 999px !important;
+	font-size: 15px !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+	text-decoration: none !important;
+	transition: opacity 0.15s ease !important;
+	line-height: 1 !important;
+}
+
+.kcp-confirm-modal__btn--cancel {
+	background: #fff !important;
+	color: #111 !important;
+	border: 2px solid #111 !important;
+	appearance: none !important;
+}
+
+.kcp-confirm-modal__btn--cancel:hover {
+	opacity: 0.7 !important;
+}
+
+.kcp-confirm-modal__btn--confirm {
+	background: #111 !important;
+	color: #fff !important;
+	border: 2px solid #111 !important;
+}
+
+.kcp-confirm-modal__btn--confirm:hover {
+	opacity: 0.8 !important;
+}
+
+/* ── Confirm modal overrides ───────────────────────────────── */
+.kcp-confirm-modal__btn {
+	text-transform: none !important;
+	white-space: nowrap !important;
+	letter-spacing: 0 !important;
 }

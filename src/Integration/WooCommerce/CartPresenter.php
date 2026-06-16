@@ -21,6 +21,11 @@ use KitchenConfiguratorPro\Services\WooVariationOptionsBuilder;
 final class CartPresenter {
 
 	/**
+	 * WooCommerce session key for the optional design check.
+	 */
+	private const SESSION_DESIGN_CHECK = 'kcp_design_check';
+
+	/**
 	 * Service container.
 	 *
 	 * @var Container
@@ -50,6 +55,12 @@ final class CartPresenter {
 		add_action( 'template_redirect', array( $this, 'handle_part_request' ) );
 		add_action( 'template_redirect', array( $this, 'handle_empty_group_request' ) );
 		add_action( 'template_redirect', array( $this, 'handle_empty_cart_request' ) );
+		add_action( 'woocommerce_cart_calculate_fees', array( $this, 'add_design_check_fee' ) );
+		add_action( 'wp_ajax_kcp_design_check', array( $this, 'ajax_design_check' ) );
+		add_action( 'wp_ajax_nopriv_kcp_design_check', array( $this, 'ajax_design_check' ) );
+		add_action( 'wp_ajax_kcp_afspraak', array( $this, 'ajax_afspraak' ) );
+		add_action( 'wp_ajax_nopriv_kcp_afspraak', array( $this, 'ajax_afspraak' ) );
+		add_action( 'wp_footer', array( $this, 'print_design_check_config' ), 21 );
 
 		remove_action( 'woocommerce_before_cart', 'woocommerce_output_all_notices', 10 );
 		add_action( 'woocommerce_before_cart', 'woocommerce_output_all_notices', 5 );
@@ -131,6 +142,18 @@ final class CartPresenter {
 			array(),
 			KCP_VERSION,
 			true
+		);
+
+		wp_localize_script(
+			'kcp-cart',
+			'kcpCart',
+			array(
+				'ajaxUrl'          => admin_url( 'admin-ajax.php' ),
+				'nonce'            => wp_create_nonce( 'kcp_cart_design_check' ),
+				'baseTotal'        => $this->get_cart_base_total(),
+				'designCheckPrice' => $this->get_design_check_price(),
+				'selected'         => $this->is_design_check_selected() ? 'yes' : 'no',
+			)
 		);
 	}
 
@@ -258,7 +281,7 @@ final class CartPresenter {
 
 		$action   = sanitize_key( wp_unslash( (string) $_GET['kcp_part_action'] ) );
 		$cart_key = wc_clean( wp_unslash( (string) $_GET['key'] ) );
-		$part_key = sanitize_text_field( wp_unslash( (string) $_GET['part_key'] ) );
+		$part_key = sanitize_key( wp_unslash( (string) $_GET['part_key'] ) );
 		$part_pos = isset( $_GET['part_pos'] ) ? max( -1, (int) wp_unslash( (string) $_GET['part_pos'] ) ) : -1;
 
 		if ( '' === $cart_key || '' === $part_key || ! function_exists( 'WC' ) || ! WC()->cart ) {
@@ -384,7 +407,15 @@ final class CartPresenter {
 			$group_title = $product->get_name();
 		}
 
-		$edit_url = $product instanceof \WC_Product ? $product->get_permalink() : '';
+		$edit_url = (string) ( $cart_item['kcp_edit_url'] ?? '' );
+		if ( '' === $edit_url && $product instanceof \WC_Product ) {
+			if ( $product->is_type( 'variation' ) ) {
+				$parent = wc_get_product( $product->get_parent_id() );
+				$edit_url = $parent instanceof \WC_Product ? (string) $parent->get_permalink() : '';
+			} else {
+				$edit_url = (string) $product->get_permalink();
+			}
+		}
 
 		return array(
 			'type'        => 'breakdown',
@@ -537,7 +568,15 @@ final class CartPresenter {
 					$cart_url
 				);
 				$part['edit_url']      = ! empty( $part['editable'] ) && '' !== $edit_url
-					? add_query_arg( 'kcp_part', $part_key, $edit_url )
+					? add_query_arg(
+						array(
+							'kcp_edit' => '1',
+							'key'      => $cart_key,
+							'part_key' => $part_key,
+							'part_pos' => $index,
+						),
+						$edit_url
+					)
 					: '';
 
 				return $part;
@@ -609,7 +648,167 @@ final class CartPresenter {
 			return ShopPresenter::format_dutch_price( 0 );
 		}
 
+		WC()->cart->calculate_totals();
+
 		return ShopPresenter::format_dutch_price( (float) WC()->cart->get_total( 'edit' ) );
+	}
+
+	/**
+	 * Cart total before the optional design check fee.
+	 *
+	 * @return float
+	 */
+	public function get_cart_base_total(): float {
+		if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
+			return 0.0;
+		}
+
+		$total = 0.0;
+
+		foreach ( WC()->cart->get_cart() as $cart_item ) {
+			if ( CartHandler::is_product_breakdown_item( $cart_item ) ) {
+				$total += (float) ( $cart_item[ ProductBreakdownBuilder::META_TOTAL ] ?? 0 );
+				continue;
+			}
+
+			if ( CartHandler::is_kcp_cart_item( $cart_item ) ) {
+				$total += (float) ( $cart_item[ CartHandler::META_TOTAL ] ?? 0 );
+				continue;
+			}
+
+			$product = $cart_item['data'] ?? null;
+
+			if ( $product instanceof \WC_Product ) {
+				$total += (float) $product->get_price() * (float) ( $cart_item['quantity'] ?? 1 );
+			}
+		}
+
+		return max( 0.0, $total );
+	}
+
+	/**
+	 * Output cart totals for the design check script after footer scripts are registered.
+	 *
+	 * @return void
+	 */
+	public function print_design_check_config(): void {
+		if ( ! is_cart() || ! function_exists( 'WC' ) || ! WC()->cart || WC()->cart->is_empty() ) {
+			return;
+		}
+
+		$config = array(
+			'baseTotal'        => $this->get_cart_base_total(),
+			'designCheckPrice' => $this->get_design_check_price(),
+			'selected'         => $this->is_design_check_selected() ? 'yes' : 'no',
+		);
+
+		printf(
+			'<script>window.kcpCart=Object.assign(window.kcpCart||{},%s);if(window.kcpInitDesignCheck){window.kcpInitDesignCheck();}</script>' . "\n",
+			wp_json_encode( $config, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) ?: '{}'
+		);
+	}
+
+	/**
+	 * View data for the optional design check block on the cart page.
+	 *
+	 * @return array{price: float, price_label: string, selected: string}
+	 */
+	public function get_design_check_view(): array {
+		$price = $this->get_design_check_price();
+
+		return array(
+			'price'       => $price,
+			'price_label' => '+ ' . ShopPresenter::format_dutch_price( $price ),
+			'selected'    => $this->is_design_check_selected() ? 'yes' : 'no',
+		);
+	}
+
+	/**
+	 * Add the design check fee when the customer opted in.
+	 *
+	 * @param \WC_Cart $cart WooCommerce cart.
+	 * @return void
+	 */
+	public function add_design_check_fee( \WC_Cart $cart ): void {
+		if ( is_admin() && ! defined( 'DOING_AJAX' ) ) {
+			return;
+		}
+
+		if ( ! $this->is_design_check_selected() ) {
+			return;
+		}
+
+		$price = $this->get_design_check_price();
+
+		if ( $price <= 0 ) {
+			return;
+		}
+
+		$cart->add_fee(
+			__( 'Ontwerp controleren', 'kitchen-configurator-pro' ),
+			$price,
+			false
+		);
+	}
+
+	/**
+	 * Persist the design check choice and return the updated cart total.
+	 *
+	 * @return void
+	 */
+	public function ajax_design_check(): void {
+		check_ajax_referer( 'kcp_cart_design_check', 'nonce' );
+
+		if ( ! function_exists( 'WC' ) || ! WC()->cart || ! WC()->session ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Winkelwagen niet beschikbaar.', 'kitchen-configurator-pro' ),
+				),
+				400
+			);
+		}
+
+		$value = sanitize_key( wp_unslash( (string) ( $_POST['value'] ?? 'no' ) ) );
+
+		if ( ! in_array( $value, array( 'yes', 'no' ), true ) ) {
+			$value = 'no';
+		}
+
+		WC()->session->set( self::SESSION_DESIGN_CHECK, $value );
+		WC()->cart->calculate_totals();
+
+		wp_send_json_success(
+			array(
+				'total'      => $this->get_formatted_total(),
+				'base_total' => $this->get_cart_base_total(),
+				'selected'   => $value,
+			)
+		);
+	}
+
+	/**
+	 * @return bool
+	 */
+	private function is_design_check_selected(): bool {
+		if ( ! function_exists( 'WC' ) || ! WC()->session ) {
+			return false;
+		}
+
+		return 'yes' === WC()->session->get( self::SESSION_DESIGN_CHECK, 'no' );
+	}
+
+	/**
+	 * @return float
+	 */
+	private function get_design_check_price(): float {
+		$settings = get_option(
+			'kcp_settings',
+			array(
+				'design_check_price' => 75,
+			)
+		);
+
+		return max( 0, (float) ( $settings['design_check_price'] ?? 75 ) );
 	}
 
 	/**
@@ -1096,5 +1295,63 @@ final class CartPresenter {
 		}
 
 		return implode( ' · ', $parts );
+	}
+
+	/**
+	 * Handle afspraak form submission via AJAX.
+	 *
+	 * @return void
+	 */
+	public function ajax_afspraak(): void {
+		check_ajax_referer( 'kcp_afspraak', 'kcp_afspraak_nonce' );
+
+		$naam      = sanitize_text_field( wp_unslash( (string) ( $_POST['kcp_naam'] ?? '' ) ) );
+		$telefoon  = sanitize_text_field( wp_unslash( (string) ( $_POST['kcp_telefoon'] ?? '' ) ) );
+		$email     = sanitize_email( wp_unslash( (string) ( $_POST['kcp_email'] ?? '' ) ) );
+		$woonplaats = sanitize_text_field( wp_unslash( (string) ( $_POST['kcp_woonplaats'] ?? '' ) ) );
+		$opmerking = sanitize_textarea_field( wp_unslash( (string) ( $_POST['kcp_opmerking'] ?? '' ) ) );
+		$week      = sanitize_text_field( wp_unslash( (string) ( $_POST['kcp_week'] ?? '' ) ) );
+
+		if ( '' === $naam || '' === $telefoon || '' === $email ) {
+			wp_send_json_error( array( 'message' => 'Vul alle verplichte velden in.' ), 422 );
+		}
+
+		$admin_email = get_option( 'admin_email', '' );
+		$site_name   = get_bloginfo( 'name' );
+
+		$subject = sprintf(
+			/* translators: %s: site name */
+			__( 'Nieuwe afspraak aanvraag via %s', 'kitchen-configurator-pro' ),
+			$site_name
+		);
+
+		$body  = "Naam: {$naam}\n";
+		$body .= "Telefoon: {$telefoon}\n";
+		$body .= "E-mail: {$email}\n";
+
+		if ( '' !== $woonplaats ) {
+			$body .= "Woonplaats: {$woonplaats}\n";
+		}
+
+		if ( '' !== $week ) {
+			$body .= "Gewenste week: {$week}\n";
+		}
+
+		if ( '' !== $opmerking ) {
+			$body .= "Opmerking: {$opmerking}\n";
+		}
+
+		$headers = array(
+			'Content-Type: text/plain; charset=UTF-8',
+			"Reply-To: {$naam} <{$email}>",
+		);
+
+		$sent = wp_mail( $admin_email, $subject, $body, $headers );
+
+		if ( $sent ) {
+			wp_send_json_success( array( 'message' => 'Bedankt! We nemen snel contact met je op.' ) );
+		} else {
+			wp_send_json_error( array( 'message' => 'Er is iets misgegaan.' ), 500 );
+		}
 	}
 }

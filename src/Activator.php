@@ -85,8 +85,9 @@ final class Activator {
 			add_option(
 				'kcp_settings',
 				array(
-					'currency'           => 'EUR',
+					'currency'            => 'EUR',
 					'quote_validity_days' => 30,
+					'design_check_price'  => 75,
 				),
 				'',
 				false

@@ -1,0 +1,240 @@
+/**
+ * Full-page cart part editor styles.
+ */
+
+body.kcp-part-edit-active .woocommerce-product-gallery,
+body.kcp-part-edit-active div.product .summary.entry-summary,
+body.kcp-part-edit-active .woocommerce-tabs,
+body.kcp-part-edit-active .related.products,
+body.kcp-part-edit-active .kcp-single-product__brand,
+body.kcp-part-edit-active form.variations_form,
+body.kcp-part-edit-active .woocommerce-breadcrumb {
+	display: none !important;
+}
+
+body.kcp-part-edit-active.single-product .site-content .ast-container,
+body.kcp-part-edit-active.single-product .site-content .content-area {
+	max-width: 1360px;
+}
+
+.kcp-part-edit-page {
+	padding: 8px 0 48px;
+	color: var(--kcp-shop-text, #111);
+}
+
+.kcp-part-edit-page__header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 24px;
+	margin-bottom: 36px;
+}
+
+.kcp-part-edit-page__title {
+	margin: 0;
+	font-size: clamp(2rem, 4vw, 3.4rem);
+	font-weight: 700;
+	line-height: 1.05;
+	text-transform: lowercase;
+}
+
+.kcp-part-edit-page__back {
+	margin-top: 12px;
+	font-size: 1rem;
+	color: var(--kcp-shop-text, #111);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+	white-space: nowrap;
+}
+
+.kcp-part-edit-page__layout {
+	display: grid;
+	grid-template-columns: minmax(220px, 280px) minmax(280px, 360px) minmax(260px, 1fr);
+	gap: 40px;
+	align-items: start;
+}
+
+.kcp-part-edit-page__media {
+	display: grid;
+	gap: 18px;
+}
+
+.kcp-part-edit-page__image-main,
+.kcp-part-edit-page__image-thumb {
+	background: #fff;
+	border: 1px solid #111;
+}
+
+.kcp-part-edit-page__image-main {
+	min-height: 280px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 18px;
+}
+
+.kcp-part-edit-page__image-main img,
+.kcp-part-edit-page__image-thumb img {
+	display: block;
+	width: 100%;
+	height: auto;
+	object-fit: contain;
+}
+
+.kcp-part-edit-page__image-thumb {
+	width: 92px;
+	padding: 8px;
+	cursor: default;
+}
+
+.kcp-part-edit-page__section + .kcp-part-edit-page__section {
+	margin-top: 28px;
+}
+
+.kcp-part-edit-page__section-title {
+	margin: 0 0 14px;
+	font-size: clamp(1.35rem, 2.4vw, 2rem);
+	font-weight: 700;
+	line-height: 1.15;
+	text-transform: lowercase;
+}
+
+.kcp-part-edit-page__fields {
+	display: grid;
+	gap: 12px;
+}
+
+.kcp-part-edit-page__field {
+	display: block;
+}
+
+.kcp-part-edit-page__select,
+.kcp-part-edit-page__input {
+	width: 100%;
+	min-height: 54px;
+	padding: 0 18px;
+	border: 1px solid #111;
+	border-radius: 999px;
+	background: #fff;
+	color: #111;
+	font: inherit;
+	font-size: 1rem;
+	appearance: none;
+}
+
+.kcp-part-edit-page__select {
+	padding-right: 44px;
+	background-image:
+		linear-gradient(45deg, transparent 50%, #111 50%),
+		linear-gradient(135deg, #111 50%, transparent 50%);
+	background-position:
+		calc(100% - 22px) calc(50% - 3px),
+		calc(100% - 16px) calc(50% - 3px);
+	background-size: 6px 6px, 6px 6px;
+	background-repeat: no-repeat;
+	cursor: pointer;
+}
+
+.kcp-part-edit-page__field--custom {
+	display: grid;
+	grid-template-columns: 1fr auto auto;
+	align-items: center;
+	gap: 12px;
+}
+
+.kcp-part-edit-page__field--custom .kcp-part-edit-page__input {
+	min-width: 0;
+}
+
+.kcp-part-edit-page__unit {
+	font-size: 1rem;
+	font-weight: 500;
+}
+
+.kcp-part-edit-page__radio {
+	width: 18px;
+	height: 18px;
+	border: 1px solid #111;
+	border-radius: 50%;
+	display: inline-block;
+}
+
+.kcp-part-edit-page__price {
+	margin-top: 42px;
+}
+
+.kcp-part-edit-page__price-label,
+.kcp-part-edit-page__price-unit {
+	display: block;
+	font-size: 1rem;
+}
+
+.kcp-part-edit-page__price-value {
+	display: block;
+	margin: 4px 0;
+	font-size: clamp(2.4rem, 4vw, 3.8rem);
+	font-weight: 700;
+	line-height: 1;
+}
+
+.kcp-part-edit-page__info-title {
+	margin: 0 0 18px;
+	font-size: clamp(1.35rem, 2.4vw, 2rem);
+	font-weight: 700;
+	text-transform: lowercase;
+}
+
+.kcp-part-edit-page__info-list {
+	margin: 0;
+	padding-left: 1.1rem;
+	display: grid;
+	gap: 10px;
+	font-size: 1rem;
+	line-height: 1.45;
+}
+
+.kcp-part-edit-page__submit {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 240px;
+	min-height: 58px;
+	margin-top: 48px;
+	padding: 0 28px;
+	border: 0;
+	border-radius: 999px;
+	background: #111;
+	color: #fff;
+	font: inherit;
+	font-size: 1.05rem;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.kcp-part-edit-page__submit:hover {
+	background: #000;
+}
+
+@media (max-width: 1100px) {
+	.kcp-part-edit-page__layout {
+		grid-template-columns: 1fr 1fr;
+	}
+
+	.kcp-part-edit-page__info {
+		grid-column: 1 / -1;
+	}
+}
+
+@media (max-width: 760px) {
+	.kcp-part-edit-page__header {
+		flex-direction: column;
+	}
+
+	.kcp-part-edit-page__layout {
+		grid-template-columns: 1fr;
+	}
+
+	.kcp-part-edit-page__submit {
+		width: 100%;
+	}
+}

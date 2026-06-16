@@ -12,6 +12,7 @@ namespace KitchenConfiguratorPro\Integration\WooCommerce;
 use KitchenConfiguratorPro\Container;
 use KitchenConfiguratorPro\Domain\Entities\ProductPreset;
 use KitchenConfiguratorPro\Repositories\ProductPresetRepository;
+use KitchenConfiguratorPro\Services\PartEditViewBuilder;
 use KitchenConfiguratorPro\Services\ProductBreakdownBuilder;
 use KitchenConfiguratorPro\Services\ProductStorefrontOptionsBuilder;
 
@@ -52,6 +53,10 @@ final class ProductOptionsPresenter {
 	 * @return void
 	 */
 	public function register(): void {
+		add_action( 'wp', array( $this, 'parse_part_edit_request' ) );
+		add_action( 'template_redirect', array( $this, 'handle_part_edit_submission' ), 5 );
+		add_filter( 'body_class', array( $this, 'part_edit_body_class' ) );
+		add_action( 'woocommerce_before_single_product', array( $this, 'render_part_edit_page' ), 5 );
 		add_action( 'woocommerce_single_product_summary', array( $this, 'render_options' ), 21 );
 		add_action( 'woocommerce_before_add_to_cart_button', array( $this, 'render_hidden_fields' ), 5 );
 		add_filter( 'woocommerce_add_cart_item_data', array( $this, 'add_cart_item_data' ), 10, 2 );
@@ -60,12 +65,38 @@ final class ProductOptionsPresenter {
 	}
 
 	/**
+	 * Active cart part edit context parsed from the request.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	private ?array $part_edit_context = null;
+
+	/**
+	 * Whether the current request is editing a cart breakdown part.
+	 *
+	 * @return bool
+	 */
+	public function is_part_edit_mode(): bool {
+		return null !== $this->part_edit_context;
+	}
+
+	/**
+	 * Whether the current request targets cart part editing.
+	 *
+	 * @return bool
+	 */
+	public function is_part_edit_request(): bool {
+		return is_product()
+			&& isset( $_GET['kcp_edit'], $_GET['key'], $_GET['part_pos'] );
+	}
+
+	/**
 	 * Render product specs, color, and height selectors.
 	 *
 	 * @return void
 	 */
 	public function render_options(): void {
-		if ( ! is_product() ) {
+		if ( ! is_product() || $this->is_part_edit_mode() ) {
 			return;
 		}
 
@@ -100,6 +131,10 @@ final class ProductOptionsPresenter {
 	 * @return void
 	 */
 	public function render_hidden_fields(): void {
+		if ( $this->is_part_edit_mode() ) {
+			return;
+		}
+
 		$preset = $this->current_preset();
 
 		if ( null === $preset || ! $this->options_builder()->supports_cart( $preset ) ) {
@@ -176,6 +211,10 @@ final class ProductOptionsPresenter {
 	 * @return void
 	 */
 	public function handle_preset_add_to_cart( $url = '' ): void {
+		if ( ! empty( $_POST['kcp_edit'] ) ) {
+			return;
+		}
+
 		if ( ! WC()->cart ) {
 			return;
 		}
@@ -480,6 +519,343 @@ final class ProductOptionsPresenter {
 		}
 
 		return $cart_item_data;
+	}
+
+	/**
+	 * Parse cart part edit query parameters on single product pages.
+	 *
+	 * @return void
+	 */
+	public function parse_part_edit_request(): void {
+		if ( ! is_product() || ! isset( $_GET['kcp_edit'], $_GET['key'], $_GET['part_pos'] ) ) {
+			return;
+		}
+
+		if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
+			return;
+		}
+
+		$cart_key  = wc_clean( wp_unslash( (string) $_GET['key'] ) );
+		$part_pos  = max( 0, (int) wp_unslash( (string) $_GET['part_pos'] ) );
+		$part_key  = isset( $_GET['part_key'] ) ? sanitize_key( wp_unslash( (string) $_GET['part_key'] ) ) : '';
+		$cart_item = WC()->cart->get_cart_item( $cart_key );
+
+		if ( ! is_array( $cart_item ) || ! CartHandler::is_product_breakdown_item( $cart_item ) ) {
+			wc_add_notice( __( 'Dit winkelwagenartikel kon niet worden gevonden.', 'kitchen-configurator-pro' ), 'error' );
+			wp_safe_redirect( wc_get_cart_url() );
+			exit;
+		}
+
+		$parts = is_array( $cart_item[ ProductBreakdownBuilder::META_PARTS ] ?? null )
+			? $cart_item[ ProductBreakdownBuilder::META_PARTS ]
+			: array();
+
+		if ( ! isset( $parts[ $part_pos ] ) || ! is_array( $parts[ $part_pos ] ) ) {
+			wc_add_notice( __( 'Dit onderdeel kon niet worden gevonden.', 'kitchen-configurator-pro' ), 'error' );
+			wp_safe_redirect( wc_get_cart_url() );
+			exit;
+		}
+
+		$part = $parts[ $part_pos ];
+
+		if ( empty( $part['editable'] ) ) {
+			wc_add_notice( __( 'Dit onderdeel kan niet worden gewijzigd.', 'kitchen-configurator-pro' ), 'error' );
+			wp_safe_redirect( wc_get_cart_url() );
+			exit;
+		}
+
+		if ( '' !== $part_key && sanitize_key( (string) ( $part['key'] ?? '' ) ) !== $part_key ) {
+			wc_add_notice( __( 'Dit onderdeel kon niet worden gevonden.', 'kitchen-configurator-pro' ), 'error' );
+			wp_safe_redirect( wc_get_cart_url() );
+			exit;
+		}
+
+		$product_id = (int) ( $cart_item['product_id'] ?? 0 );
+
+		if ( $product_id !== get_the_ID() ) {
+			$product = wc_get_product( $product_id );
+
+			if ( $product instanceof \WC_Product ) {
+				wp_safe_redirect(
+					add_query_arg(
+						array(
+							'kcp_edit'  => '1',
+							'key'       => $cart_key,
+							'part_pos'  => $part_pos,
+							'part_key'  => (string) ( $part['key'] ?? $part_key ),
+						),
+						$product->get_permalink()
+					)
+				);
+				exit;
+			}
+		}
+
+		$part_group = $this->resolve_part_group_for_edit( $product_id, $part_pos, $part );
+
+		if ( null === $part_group || empty( $part_group['items'] ) ) {
+			wc_add_notice( __( 'Er zijn geen varianten beschikbaar voor dit onderdeel.', 'kitchen-configurator-pro' ), 'error' );
+			wp_safe_redirect( wc_get_cart_url() );
+			exit;
+		}
+
+		$selected_item = sanitize_key( (string) ( $part['selected_item'] ?? $part_group['default_item'] ?? '' ) );
+
+		if ( '' === $selected_item && ! empty( $part_group['items'][0]['id'] ) ) {
+			$selected_item = sanitize_key( (string) $part_group['items'][0]['id'] );
+		}
+
+		$this->part_edit_context = array(
+			'cart_key'       => $cart_key,
+			'part_pos'       => $part_pos,
+			'part_key'       => (string) ( $part['key'] ?? $part_key ),
+			'part_label'     => (string) ( $part['label'] ?? $part_group['label'] ?? '' ),
+			'selected_item'  => $selected_item,
+			'items'          => $part_group['items'],
+			'product_id'     => $product_id,
+			'image_url'      => (string) ( $part['image_url'] ?? $part_group['image_url'] ?? '' ),
+			'info_lines'     => is_array( $part_group['info_lines'] ?? null ) ? $part_group['info_lines'] : array(),
+		);
+	}
+
+	/**
+	 * Persist a selected part item back to the cart.
+	 *
+	 * @return void
+	 */
+	public function handle_part_edit_submission(): void {
+		if ( ! is_product() || 'POST' !== ( $_SERVER['REQUEST_METHOD'] ?? '' ) ) {
+			return;
+		}
+
+		if ( empty( $_POST['kcp_edit'] ) || empty( $_POST['kcp_cart_key'] ) ) {
+			return;
+		}
+
+		if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
+			return;
+		}
+
+		$cart_key  = wc_clean( wp_unslash( (string) $_POST['kcp_cart_key'] ) );
+		$part_pos  = max( 0, (int) wp_unslash( (string) ( $_POST['kcp_part_pos'] ?? 0 ) ) );
+		$item_id   = sanitize_key( wp_unslash( (string) ( $_POST['kcp_part_item'] ?? '' ) ) );
+		$cart_item = WC()->cart->get_cart_item( $cart_key );
+
+		if ( ! is_array( $cart_item ) || ! CartHandler::is_product_breakdown_item( $cart_item ) ) {
+			wc_add_notice( __( 'Dit winkelwagenartikel kon niet worden gevonden.', 'kitchen-configurator-pro' ), 'error' );
+			wp_safe_redirect( wc_get_cart_url() );
+			exit;
+		}
+
+		$parts = is_array( $cart_item[ ProductBreakdownBuilder::META_PARTS ] ?? null )
+			? $cart_item[ ProductBreakdownBuilder::META_PARTS ]
+			: array();
+
+		if ( ! isset( $parts[ $part_pos ] ) || ! is_array( $parts[ $part_pos ] ) ) {
+			wc_add_notice( __( 'Dit onderdeel kon niet worden gevonden.', 'kitchen-configurator-pro' ), 'error' );
+			wp_safe_redirect( wc_get_cart_url() );
+			exit;
+		}
+
+		$product_id = (int) ( $cart_item['product_id'] ?? 0 );
+		$part_group = $this->resolve_part_group_for_edit( $product_id, $part_pos, $parts[ $part_pos ] );
+
+		if ( null === $part_group ) {
+			wc_add_notice( __( 'Dit onderdeel kon niet worden bijgewerkt.', 'kitchen-configurator-pro' ), 'error' );
+			wp_safe_redirect( wc_get_cart_url() );
+			exit;
+		}
+
+		$updated_part = $this->breakdown_builder()->apply_part_item(
+			$parts[ $part_pos ],
+			$item_id,
+			is_array( $part_group['items'] ?? null ) ? $part_group['items'] : array()
+		);
+
+		if ( null === $updated_part ) {
+			wc_add_notice( __( 'Selecteer een geldige variant.', 'kitchen-configurator-pro' ), 'error' );
+			wp_safe_redirect( wp_get_referer() ?: wc_get_cart_url() );
+			exit;
+		}
+
+		$parts[ $part_pos ] = $updated_part;
+		$surcharges         = is_array( $cart_item['kcp_breakdown_surcharges'] ?? null )
+			? $cart_item['kcp_breakdown_surcharges']
+			: array();
+
+		WC()->cart->cart_contents[ $cart_key ][ ProductBreakdownBuilder::META_PARTS ] = $parts;
+		WC()->cart->cart_contents[ $cart_key ][ ProductBreakdownBuilder::META_TOTAL ] = $this->breakdown_builder()->calculate_total( $parts, $surcharges );
+		WC()->cart->set_session();
+
+		wc_add_notice( __( 'Onderdeel bijgewerkt in je winkelwagen.', 'kitchen-configurator-pro' ) );
+		wp_safe_redirect( wc_get_cart_url() );
+		exit;
+	}
+
+	/**
+	 * Render the full-page cart part editor.
+	 *
+	 * @return void
+	 */
+	public function render_part_edit_page(): void {
+		if ( null === $this->part_edit_context ) {
+			return;
+		}
+
+		/** @var PartEditViewBuilder $builder */
+		$builder = $this->container->get( PartEditViewBuilder::class );
+		$view    = $builder->build( $this->part_edit_context );
+
+		if ( empty( $view ) ) {
+			return;
+		}
+
+		include KCP_PLUGIN_DIR . 'templates/woocommerce/partials/part-edit-page.php';
+	}
+
+	/**
+	 * Add body class while editing a cart part.
+	 *
+	 * @param array<int, string> $classes Body classes.
+	 * @return array<int, string>
+	 */
+	public function part_edit_body_class( array $classes ): array {
+		if ( $this->is_part_edit_mode() ) {
+			$classes[] = 'kcp-part-edit-active';
+		}
+
+		return $classes;
+	}
+
+	/**
+	 * Resolve the preset part group used for cart part editing.
+	 *
+	 * @param int                  $product_id Product ID.
+	 * @param int                  $part_pos   Part index in cart breakdown.
+	 * @param array<string, mixed> $part       Cart part row.
+	 * @return array<string, mixed>|null
+	 */
+	private function resolve_part_group_for_edit( int $product_id, int $part_pos, array $part ): ?array {
+		$items = is_array( $part['items'] ?? null ) ? $part['items'] : array();
+
+		if ( ! empty( $items ) ) {
+			return array(
+				'label'        => (string) ( $part['label'] ?? '' ),
+				'default_item' => sanitize_key( (string) ( $part['selected_item'] ?? '' ) ),
+				'image_url'    => esc_url_raw( (string) ( $part['image_url'] ?? '' ) ),
+				'info_lines'   => is_array( $part['info_lines'] ?? null ) ? $part['info_lines'] : array(),
+				'items'        => $items,
+			);
+		}
+
+		$preset = $this->get_preset_for_product( $product_id );
+
+		if ( null === $preset ) {
+			return null;
+		}
+
+		$groups = is_array( $preset->product_options()['part_groups'] ?? null )
+			? $preset->product_options()['part_groups']
+			: array();
+
+		$group = $this->find_preset_part_group( $groups, $part, $part_pos );
+
+		if ( null === $group ) {
+			return null;
+		}
+
+		$items = $this->normalize_preset_part_group_items(
+			is_array( $group['items'] ?? null ) ? $group['items'] : array()
+		);
+
+		if ( empty( $items ) ) {
+			return null;
+		}
+
+		return array(
+			'label'        => sanitize_text_field( (string) ( $group['label'] ?? $part['label'] ?? '' ) ),
+			'default_item' => sanitize_key( (string) ( $group['default_item'] ?? '' ) ),
+			'image_url'    => esc_url_raw( (string) ( $group['image_url'] ?? $part['image_url'] ?? '' ) ),
+			'info_lines'   => is_array( $group['info_lines'] ?? null ) ? $group['info_lines'] : array(),
+			'items'        => $items,
+		);
+	}
+
+	/**
+	 * Find the preset part group for a cart breakdown row.
+	 *
+	 * Duplicated parts are appended after the original preset groups, so matching
+	 * by label or ID is more reliable than using the cart row index alone.
+	 *
+	 * @param array<int, array<string, mixed>> $groups   Preset part groups.
+	 * @param array<string, mixed>             $part     Cart part row.
+	 * @param int                              $part_pos Cart part index.
+	 * @return array<string, mixed>|null
+	 */
+	private function find_preset_part_group( array $groups, array $part, int $part_pos ): ?array {
+		$part_label = sanitize_text_field( (string) ( $part['label'] ?? '' ) );
+		$part_id    = sanitize_key( (string) ( $part['id'] ?? '' ) );
+
+		if ( '' !== $part_label ) {
+			foreach ( $groups as $group ) {
+				if ( ! is_array( $group ) ) {
+					continue;
+				}
+
+				if ( sanitize_text_field( (string) ( $group['label'] ?? '' ) ) === $part_label ) {
+					return $group;
+				}
+			}
+		}
+
+		if ( '' !== $part_id ) {
+			foreach ( $groups as $group ) {
+				if ( ! is_array( $group ) ) {
+					continue;
+				}
+
+				if ( sanitize_key( (string) ( $group['id'] ?? '' ) ) === $part_id ) {
+					return $group;
+				}
+			}
+		}
+
+		if ( isset( $groups[ $part_pos ] ) && is_array( $groups[ $part_pos ] ) ) {
+			return $groups[ $part_pos ];
+		}
+
+		return null;
+	}
+
+	/**
+	 * @param array<int, mixed> $raw_items Raw preset part group items.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function normalize_preset_part_group_items( array $raw_items ): array {
+		$items = array();
+
+		foreach ( $raw_items as $item ) {
+			if ( ! is_array( $item ) ) {
+				continue;
+			}
+
+			$item_id = sanitize_key( (string) ( $item['id'] ?? '' ) );
+			$value   = sanitize_text_field( (string) ( $item['value'] ?? $item['label'] ?? '' ) );
+
+			if ( '' === $item_id || '' === $value ) {
+				continue;
+			}
+
+			$items[] = array(
+				'id'          => $item_id,
+				'value'       => $value,
+				'description' => sanitize_text_field( (string) ( $item['description'] ?? '' ) ),
+				'image_url'   => esc_url_raw( (string) ( $item['image_url'] ?? '' ) ),
+				'price'       => (float) ( $item['price'] ?? 0 ),
+			);
+		}
+
+		return $items;
 	}
 
 	/**

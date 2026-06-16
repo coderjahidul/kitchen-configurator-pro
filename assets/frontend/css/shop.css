@@ -301,6 +301,27 @@ body.kcp-shop-active.single-product:has(.kcp-product-options) .kcp-product-stick
 
 /* ── Option groups (color / height) ── */
 
+body.kcp-part-edit-active .kcp-product-options,
+body.kcp-part-edit-active .kcp-variations-hidden,
+body.kcp-part-edit-active .quantity {
+	display: none !important;
+}
+
+.kcp-part-edit {
+	margin-bottom: 24px;
+}
+
+.kcp-part-edit__intro {
+	margin: 0 0 16px;
+	color: var(--kcp-shop-muted, #666);
+}
+
+.kcp-option-bar--part .kcp-option-bar__price {
+	margin-left: auto;
+	font-weight: 700;
+	white-space: nowrap;
+}
+
 .kcp-option-group {
 	margin-bottom: 32px;
 }

@@ -89,7 +89,9 @@ final class ProductStorefrontOptionsBuilder {
 
 		$built['group_title']   = sanitize_text_field( (string) ( $manual['group_title'] ?? '' ) );
 		$built['preview_image'] = esc_url_raw( (string) ( $manual['preview_image'] ?? '' ) );
-		$built['parts']         = $this->normalize_parts( is_array( $manual['parts'] ?? null ) ? $manual['parts'] : array() );
+		$normalized_parts = $this->normalize_parts( is_array( $manual['parts'] ?? null ) ? $manual['parts'] : array() );
+		$part_groups      = is_array( $manual['part_groups'] ?? null ) ? $manual['part_groups'] : array();
+		$built['parts']   = $this->hydrate_parts_from_groups( $normalized_parts, $part_groups );
 
 		return $built;
 	}
@@ -517,6 +519,8 @@ final class ProductStorefrontOptionsBuilder {
 				'price'          => (float) ( $part['price'] ?? 0 ),
 				'height_prices'  => $sanitized_height_prices,
 				'editable'       => ! empty( $part['editable'] ),
+				'selected_item'  => sanitize_key( (string) ( $part['selected_item'] ?? '' ) ),
+				'items'          => is_array( $part['items'] ?? null ) ? $part['items'] : array(),
 			);
 		}
 
@@ -893,6 +897,112 @@ final class ProductStorefrontOptionsBuilder {
 		}
 
 		return $items;
+	}
+
+	/**
+	 * Attach variant items from preset part groups when flattened parts are missing them.
+	 *
+	 * @param array<int, array<string, mixed>> $parts  Normalized part rows.
+	 * @param array<int, array<string, mixed>> $groups Preset part groups.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function hydrate_parts_from_groups( array $parts, array $groups ): array {
+		if ( empty( $groups ) ) {
+			return $parts;
+		}
+
+		foreach ( $parts as $index => $part ) {
+			if ( ! empty( $part['items'] ) ) {
+				continue;
+			}
+
+			$group = isset( $groups[ $index ] ) && is_array( $groups[ $index ] )
+				? $groups[ $index ]
+				: $this->find_part_group_for_part( $groups, $part );
+
+			if ( ! is_array( $group ) ) {
+				continue;
+			}
+
+			$items = $this->normalize_part_group_items(
+				is_array( $group['items'] ?? null ) ? $group['items'] : array()
+			);
+
+			if ( empty( $items ) ) {
+				continue;
+			}
+
+			$parts[ $index ]['items'] = $items;
+		}
+
+		return $parts;
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $groups Preset part groups.
+	 * @param array<string, mixed>             $part   Part row.
+	 * @return array<string, mixed>|null
+	 */
+	private function find_part_group_for_part( array $groups, array $part ): ?array {
+		$part_label = sanitize_text_field( (string) ( $part['label'] ?? '' ) );
+		$part_id    = sanitize_key( (string) ( $part['id'] ?? '' ) );
+
+		if ( '' !== $part_label ) {
+			foreach ( $groups as $group ) {
+				if ( ! is_array( $group ) ) {
+					continue;
+				}
+
+				if ( sanitize_text_field( (string) ( $group['label'] ?? '' ) ) === $part_label ) {
+					return $group;
+				}
+			}
+		}
+
+		if ( '' !== $part_id ) {
+			foreach ( $groups as $group ) {
+				if ( ! is_array( $group ) ) {
+					continue;
+				}
+
+				if ( sanitize_key( (string) ( $group['id'] ?? '' ) ) === $part_id ) {
+					return $group;
+				}
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * @param array<int, mixed> $items Raw part group items.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function normalize_part_group_items( array $items ): array {
+		$normalized = array();
+
+		foreach ( $items as $item ) {
+			if ( ! is_array( $item ) ) {
+				continue;
+			}
+
+			$item_id = sanitize_key( (string) ( $item['id'] ?? '' ) );
+			$value   = sanitize_text_field( (string) ( $item['value'] ?? $item['label'] ?? '' ) );
+
+			if ( '' === $item_id || '' === $value ) {
+				continue;
+			}
+
+			$normalized[] = array(
+				'id'          => $item_id,
+				'value'       => $value,
+				'description' => sanitize_text_field( (string) ( $item['description'] ?? '' ) ),
+				'image_url'   => esc_url_raw( (string) ( $item['image_url'] ?? '' ) ),
+				'price'       => (float) ( $item['price'] ?? 0 ),
+			);
+		}
+
+		return $normalized;
 	}
 
 	/**

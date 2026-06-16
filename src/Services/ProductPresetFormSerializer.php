@@ -648,14 +648,27 @@ final class ProductPresetFormSerializer {
 	 * @return array<int, array<string, mixed>>
 	 */
 	private function flatten_part_groups( array $groups ): array {
-		$parts = array();
+		$parts    = array();
+		$seen_ids = array();
 
 		foreach ( $groups as $group ) {
 			$part = $this->part_from_group( $group );
 
-			if ( null !== $part ) {
-				$parts[] = $part;
+			if ( null === $part ) {
+				continue;
 			}
+
+			$base_id = sanitize_key( (string) ( $part['id'] ?? '' ) );
+
+			if ( isset( $seen_ids[ $base_id ] ) ) {
+				++$seen_ids[ $base_id ];
+				$part['key'] = $base_id . '-' . $seen_ids[ $base_id ];
+			} else {
+				$seen_ids[ $base_id ] = 1;
+				$part['key']          = $base_id;
+			}
+
+			$parts[] = $part;
 		}
 
 		return $parts;
@@ -680,6 +693,7 @@ final class ProductPresetFormSerializer {
 
 		$items         = is_array( $group['items'] ?? null ) ? $group['items'] : array();
 		$height_prices = array();
+		$part_items    = $this->normalize_part_group_items( $items );
 
 		foreach ( $items as $item ) {
 			if ( ! is_array( $item ) ) {
@@ -704,17 +718,42 @@ final class ProductPresetFormSerializer {
 			$price = (float) reset( $height_prices );
 		}
 
+		$description = sanitize_text_field( (string) ( $group['description'] ?? '' ) );
+		$image_url   = esc_url_raw( (string) ( $group['image_url'] ?? '' ) );
+		$selected_item = '' !== $default_item ? $default_item : (string) ( $part_items[0]['id'] ?? '' );
+
+		foreach ( $part_items as $item ) {
+			if ( sanitize_key( (string) ( $item['id'] ?? '' ) ) !== $selected_item ) {
+				continue;
+			}
+
+			if ( '' !== (string) ( $item['description'] ?? '' ) ) {
+				$description = sanitize_text_field( (string) $item['description'] );
+			}
+
+			if ( '' !== (string) ( $item['image_url'] ?? '' ) ) {
+				$image_url = esc_url_raw( (string) $item['image_url'] );
+			}
+
+			break;
+		}
+
 		$part = array(
-			'id'          => $id,
-			'label'       => $label,
-			'description' => sanitize_text_field( (string) ( $group['description'] ?? '' ) ),
-			'image_url'   => esc_url_raw( (string) ( $group['image_url'] ?? '' ) ),
-			'price'       => $price,
-			'editable'    => ! empty( $group['editable'] ),
+			'id'            => $id,
+			'label'         => $label,
+			'description'   => $description,
+			'image_url'     => $image_url,
+			'price'         => $price,
+			'editable'      => ! empty( $group['editable'] ),
+			'selected_item' => $selected_item,
 		);
 
 		if ( ! empty( $height_prices ) ) {
 			$part['height_prices'] = $height_prices;
+		}
+
+		if ( ! empty( $part_items ) ) {
+			$part['items'] = $part_items;
 		}
 
 		return $part;
