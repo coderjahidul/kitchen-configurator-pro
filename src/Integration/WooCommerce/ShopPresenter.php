@@ -320,7 +320,7 @@ final class ShopPresenter {
 			return $price;
 		}
 
-		$amount = (float) wc_get_price_to_display( $product );
+		$amount = $this->resolve_storefront_price( $product );
 
 		if ( $amount <= 0 ) {
 			return $price;
@@ -337,6 +337,75 @@ final class ShopPresenter {
 	 */
 	public static function format_dutch_price( float $amount ): string {
 		return number_format( $amount, 0, ',', '.' ) . ',-';
+	}
+
+	/**
+	 * Resolve the storefront amount for shop/archive price output.
+	 *
+	 * Mirrors single-product live price defaults for KCP-rendered variable products.
+	 *
+	 * @param \WC_Product $product Product object.
+	 * @return float
+	 */
+	private function resolve_storefront_price( \WC_Product $product ): float {
+		$amount = (float) wc_get_price_to_display( $product );
+
+		if ( ! $product->is_type( 'variable' ) ) {
+			return $amount;
+		}
+
+		/** @var WooVariationOptionsBuilder $builder */
+		$builder = kcp_plugin()->container()->get( WooVariationOptionsBuilder::class );
+
+		if ( ! $builder->can_render( $product ) ) {
+			return $amount;
+		}
+
+		$options = $builder->build( $product );
+		$base    = (float) ( $options['base_price'] ?? $amount );
+		$groups  = is_array( $options['option_groups'] ?? null ) ? $options['option_groups'] : array();
+
+		if ( empty( $groups ) ) {
+			return $base;
+		}
+
+		foreach ( $groups as $group ) {
+			$base += $this->resolve_default_group_modifier( is_array( $group ) ? $group : array() );
+		}
+
+		return max( 0.0, $base );
+	}
+
+	/**
+	 * Resolve the selected default modifier for a storefront option group.
+	 *
+	 * @param array<string, mixed> $group Option group.
+	 * @return float
+	 */
+	private function resolve_default_group_modifier( array $group ): float {
+		$items = is_array( $group['items'] ?? null ) ? $group['items'] : array();
+
+		if ( empty( $items ) ) {
+			return 0.0;
+		}
+
+		$default_id = sanitize_key( (string) ( $group['default_item'] ?? '' ) );
+
+		if ( '' === $default_id ) {
+			$default_id = sanitize_key( (string) ( $items[0]['id'] ?? '' ) );
+		}
+
+		foreach ( $items as $item ) {
+			if ( ! is_array( $item ) ) {
+				continue;
+			}
+
+			if ( sanitize_key( (string) ( $item['id'] ?? '' ) ) === $default_id ) {
+				return (float) ( $item['price_modifier'] ?? 0 );
+			}
+		}
+
+		return 0.0;
 	}
 
 	/**
