@@ -49,6 +49,7 @@ final class CartPresenter {
 	public function register(): void {
 		add_filter( 'woocommerce_locate_template', array( $this, 'locate_template' ), 10, 3 );
 		add_filter( 'body_class', array( $this, 'body_class' ) );
+		add_filter( 'woocommerce_checkout_fields', array( $this, 'checkout_fields' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_filter( 'woocommerce_add_to_cart_redirect', array( $this, 'redirect_after_add_to_cart' ) );
 		add_action( 'template_redirect', array( $this, 'handle_copy_request' ) );
@@ -77,14 +78,22 @@ final class CartPresenter {
 	public function locate_template( string $template, string $template_name, string $template_path ): string {
 		unset( $template_path );
 
-		if ( ! is_cart() ) {
-			return $template;
+		$allowed = array();
+
+		if ( is_cart() ) {
+			$allowed = array(
+				'cart/cart.php',
+				'cart/cart-empty.php',
+			);
 		}
 
-		$allowed = array(
-			'cart/cart.php',
-			'cart/cart-empty.php',
-		);
+		if ( is_checkout() && ! is_order_received_page() ) {
+			$allowed = array(
+				'checkout/form-checkout.php',
+				'checkout/payment.php',
+				'checkout/review-order.php',
+			);
+		}
 
 		if ( ! in_array( $template_name, $allowed, true ) ) {
 			return $template;
@@ -107,7 +116,40 @@ final class CartPresenter {
 			$classes[] = 'kcp-shop-active';
 		}
 
+		if ( is_checkout() && ! is_order_received_page() ) {
+			$classes[] = 'kcp-checkout-active';
+			$classes[] = 'kcp-shop-active';
+		}
+
 		return $classes;
+	}
+
+	/**
+	 * Remove checkout fields that are not part of the reference design.
+	 *
+	 * @param array<string, array<string, array<string, mixed>>> $fields Checkout fields.
+	 * @return array<string, array<string, array<string, mixed>>>
+	 */
+	public function checkout_fields( array $fields ): array {
+		$remove = array(
+			'billing_company',
+			'billing_country',
+			'billing_state',
+			'shipping_company',
+			'shipping_country',
+			'shipping_state',
+		);
+
+		foreach ( $remove as $key ) {
+			if ( str_starts_with( $key, 'billing_' ) ) {
+				unset( $fields['billing'][ $key ] );
+				continue;
+			}
+
+			unset( $fields['shipping'][ $key ] );
+		}
+
+		return $fields;
 	}
 
 	/**
@@ -116,11 +158,13 @@ final class CartPresenter {
 	 * @return void
 	 */
 	public function enqueue_assets(): void {
-		if ( ! is_cart() ) {
+		if ( ! is_cart() && ( ! is_checkout() || is_order_received_page() ) ) {
 			return;
 		}
 
-		$this->enqueue_font_awesome();
+		if ( is_cart() ) {
+			$this->enqueue_font_awesome();
+		}
 
 		wp_enqueue_style(
 			'kcp-shop',
@@ -129,32 +173,51 @@ final class CartPresenter {
 			KCP_VERSION
 		);
 
-		wp_enqueue_style(
-			'kcp-cart',
-			KCP_PLUGIN_URL . 'assets/frontend/css/cart.css',
-			array( 'kcp-shop' ),
-			KCP_VERSION
-		);
+		if ( is_cart() ) {
+			wp_enqueue_style(
+				'kcp-cart',
+				KCP_PLUGIN_URL . 'assets/frontend/css/cart.css',
+				array( 'kcp-shop' ),
+				KCP_VERSION
+			);
 
-		wp_enqueue_script(
-			'kcp-cart',
-			KCP_PLUGIN_URL . 'assets/frontend/js/cart.js',
-			array(),
-			KCP_VERSION,
-			true
-		);
+			wp_enqueue_script(
+				'kcp-cart',
+				KCP_PLUGIN_URL . 'assets/frontend/js/cart.js',
+				array(),
+				KCP_VERSION,
+				true
+			);
 
-		wp_localize_script(
-			'kcp-cart',
-			'kcpCart',
-			array(
-				'ajaxUrl'          => admin_url( 'admin-ajax.php' ),
-				'nonce'            => wp_create_nonce( 'kcp_cart_design_check' ),
-				'baseTotal'        => $this->get_cart_base_total(),
-				'designCheckPrice' => $this->get_design_check_price(),
-				'selected'         => $this->is_design_check_selected() ? 'yes' : 'no',
-			)
-		);
+			wp_localize_script(
+				'kcp-cart',
+				'kcpCart',
+				array(
+					'ajaxUrl'          => admin_url( 'admin-ajax.php' ),
+					'nonce'            => wp_create_nonce( 'kcp_cart_design_check' ),
+					'baseTotal'        => $this->get_cart_base_total(),
+					'designCheckPrice' => $this->get_design_check_price(),
+					'selected'         => $this->is_design_check_selected() ? 'yes' : 'no',
+				)
+			);
+		}
+
+		if ( is_checkout() && ! is_order_received_page() ) {
+			wp_enqueue_style(
+				'kcp-checkout',
+				KCP_PLUGIN_URL . 'assets/frontend/css/checkout.css',
+				array( 'kcp-shop' ),
+				KCP_VERSION
+			);
+
+			wp_enqueue_script(
+				'kcp-checkout',
+				KCP_PLUGIN_URL . 'assets/frontend/js/checkout.js',
+				array(),
+				KCP_VERSION,
+				true
+			);
+		}
 	}
 
 	/**
