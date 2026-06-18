@@ -436,12 +436,15 @@ button.kcp-checkout__back {
 
 .kcp-checkout__back--payment,
 button.kcp-checkout__back--payment {
-	min-width: 290px;
+	width: 30%;
+	min-width: 0;
 }
 
+body.kcp-checkout-active.woocommerce-page.woocommerce-checkout #payment #place_order,
 button.kcp-checkout__submit,
 body.kcp-checkout-active #place_order.kcp-checkout__submit {
-	min-width: 220px;
+	width: 30%;
+	min-width: 0;
 	margin: 0;
 	background: #000;
 	color: #fff;
@@ -501,7 +504,9 @@ body.kcp-checkout-active .woocommerce-invalid select {
 		gap: 30px;
 	}
 
-	body.kcp-checkout-active #place_order.kcp-checkout__submit {
+	body.kcp-checkout-active.woocommerce-page.woocommerce-checkout #payment #place_order,
+	body.kcp-checkout-active #place_order.kcp-checkout__submit,
+	button.kcp-checkout__submit {
 		width: 100%;
 		margin: 0;
 	}
@@ -512,10 +517,7 @@ body.kcp-checkout-active .woocommerce-invalid select {
 	}
 
 	.kcp-checkout__back,
-	button.kcp-checkout__back {
-		width: max-content;
-	}
-
+	button.kcp-checkout__back,
 	.kcp-checkout__back--payment,
 	button.kcp-checkout__back--payment {
 		width: 100%;
