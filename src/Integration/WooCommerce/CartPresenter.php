@@ -50,6 +50,8 @@ final class CartPresenter {
 		add_filter( 'woocommerce_locate_template', array( $this, 'locate_template' ), 10, 3 );
 		add_filter( 'body_class', array( $this, 'body_class' ) );
 		add_filter( 'woocommerce_checkout_fields', array( $this, 'checkout_fields' ) );
+		add_filter( 'woocommerce_checkout_get_value', array( $this, 'checkout_default_country' ), 10, 2 );
+		add_filter( 'woocommerce_checkout_posted_data', array( $this, 'checkout_posted_data' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_filter( 'woocommerce_add_to_cart_redirect', array( $this, 'redirect_after_add_to_cart' ) );
 		add_action( 'template_redirect', array( $this, 'handle_copy_request' ) );
@@ -133,10 +135,8 @@ final class CartPresenter {
 	public function checkout_fields( array $fields ): array {
 		$remove = array(
 			'billing_company',
-			'billing_country',
 			'billing_state',
 			'shipping_company',
-			'shipping_country',
 			'shipping_state',
 		);
 
@@ -149,7 +149,84 @@ final class CartPresenter {
 			unset( $fields['shipping'][ $key ] );
 		}
 
+		$default_country = $this->get_checkout_default_country();
+
+		foreach ( array( 'billing_country', 'shipping_country' ) as $country_key ) {
+			$section = str_starts_with( $country_key, 'billing_' ) ? 'billing' : 'shipping';
+
+			if ( ! isset( $fields[ $section ][ $country_key ] ) ) {
+				continue;
+			}
+
+			$fields[ $section ][ $country_key ]['type']        = 'hidden';
+			$fields[ $section ][ $country_key ]['label']       = false;
+			$fields[ $section ][ $country_key ]['required']    = true;
+			$fields[ $section ][ $country_key ]['default']       = $default_country;
+			$fields[ $section ][ $country_key ]['class']         = array( 'form-row-wide', 'kcp-checkout-hidden' );
+			$fields[ $section ][ $country_key ]['input_class']   = array( 'kcp-checkout-hidden__input' );
+		}
+
 		return $fields;
+	}
+
+	/**
+	 * Default hidden country values on checkout.
+	 *
+	 * @param mixed  $value Field value.
+	 * @param string $input Field key.
+	 * @return mixed
+	 */
+	public function checkout_default_country( $value, string $input ) {
+		if ( null !== $value ) {
+			return $value;
+		}
+
+		if ( in_array( $input, array( 'billing_country', 'shipping_country' ), true ) ) {
+			return $this->get_checkout_default_country();
+		}
+
+		return $value;
+	}
+
+	/**
+	 * Ensure posted checkout data always includes a valid country.
+	 *
+	 * @param array<string, mixed> $data Posted checkout data.
+	 * @return array<string, mixed>
+	 */
+	public function checkout_posted_data( array $data ): array {
+		$default_country = $this->get_checkout_default_country();
+
+		if ( empty( $data['billing_country'] ) ) {
+			$data['billing_country'] = $default_country;
+		}
+
+		if ( empty( $data['shipping_country'] ) ) {
+			$data['shipping_country'] = $data['billing_country'];
+		}
+
+		return $data;
+	}
+
+	/**
+	 * Resolve the default checkout country for hidden address fields.
+	 *
+	 * @return string
+	 */
+	private function get_checkout_default_country(): string {
+		$country = WC()->countries->get_base_country();
+
+		if ( array_key_exists( $country, WC()->countries->get_allowed_countries() ) ) {
+			return $country;
+		}
+
+		$allowed = WC()->countries->get_allowed_countries();
+
+		if ( ! empty( $allowed ) ) {
+			return (string) array_key_first( $allowed );
+		}
+
+		return 'NL';
 	}
 
 	/**

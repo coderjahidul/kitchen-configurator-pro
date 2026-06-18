@@ -17,6 +17,11 @@ if ( ! $checkout->is_registration_enabled() && $checkout->is_registration_requir
 
 $billing_fields = $checkout->get_checkout_fields( 'billing' );
 $order_fields   = $checkout->get_checkout_fields( 'order' );
+$default_country = function_exists( 'WC' ) && WC()->countries ? WC()->countries->get_base_country() : 'NL';
+$billing_country = $checkout->get_value( 'billing_country' );
+$billing_country = '' !== $billing_country ? $billing_country : $default_country;
+
+unset( $billing_fields['billing_country'] );
 
 $render_field = static function ( string $key, array &$fields, string $label = '' ) use ( $checkout ): void {
 	if ( empty( $fields[ $key ] ) ) {
@@ -39,6 +44,8 @@ $render_field = static function ( string $key, array &$fields, string $label = '
 ?>
 
 <form name="checkout" method="post" class="checkout woocommerce-checkout kcp-checkout" action="<?php echo esc_url( wc_get_checkout_url() ); ?>" enctype="multipart/form-data" aria-label="<?php echo esc_attr__( 'Checkout', 'woocommerce' ); ?>">
+	<input type="hidden" name="billing_country" id="billing_country" value="<?php echo esc_attr( $billing_country ); ?>">
+	<input type="hidden" name="shipping_country" id="shipping_country" value="<?php echo esc_attr( $billing_country ); ?>">
 	<h1 class="kcp-checkout__title"><?php esc_html_e( 'my details', 'kitchen-configurator-pro' ); ?></h1>
 
 	<?php if ( $checkout->get_checkout_fields() ) : ?>
