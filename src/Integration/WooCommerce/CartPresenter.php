@@ -500,23 +500,607 @@ final class CartPresenter {
 			return array();
 		}
 
-		$groups = array();
+		$groups        = array();
+		$letter_lookup = $this->get_configuration_letter_map();
 
 		foreach ( WC()->cart->get_cart() as $cart_key => $cart_item ) {
 			if ( CartHandler::is_product_breakdown_item( $cart_item ) ) {
-				$groups[] = $this->enrich_group( $this->group_from_product_breakdown( $cart_key, $cart_item ), $cart_item );
-				continue;
+				$group = $this->enrich_group( $this->group_from_product_breakdown( $cart_key, $cart_item ), $cart_item );
+			} elseif ( CartHandler::is_kcp_cart_item( $cart_item ) ) {
+				$group = $this->enrich_group( $this->group_from_configuration( $cart_key, $cart_item ), $cart_item );
+			} else {
+				$group = $this->enrich_group( $this->group_from_simple_product( $cart_key, $cart_item ), $cart_item );
 			}
 
-			if ( CartHandler::is_kcp_cart_item( $cart_item ) ) {
-				$groups[] = $this->enrich_group( $this->group_from_configuration( $cart_key, $cart_item ), $cart_item );
-				continue;
+			if ( $this->cart_item_has_storefront_config( $cart_item ) ) {
+				$letter = strtoupper(
+					(string) ( $letter_lookup[ $this->configuration_fingerprint( $cart_item ) ] ?? '' )
+				);
+				$group['config_letter'] = $letter;
+				$group['parts']         = $this->tag_parts_with_config_letter(
+					is_array( $group['parts'] ?? null ) ? $group['parts'] : array(),
+					$letter
+				);
 			}
 
-			$groups[] = $this->enrich_group( $this->group_from_simple_product( $cart_key, $cart_item ), $cart_item );
+			$groups[] = $group;
 		}
 
 		return $groups;
+	}
+
+	/**
+	 * Whether the cart contains multiple distinct storefront configurations.
+	 *
+	 * @return bool
+	 */
+	public function has_multiple_configuration_profiles(): bool {
+		return count( $this->get_configuration_profiles() ) > 1;
+	}
+
+	/**
+	 * Unique configuration profiles (A, B, C…) for the cart overview cards.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function get_configuration_profiles(): array {
+		if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
+			return array();
+		}
+
+		$profiles   = array();
+		$seen       = array();
+		$letter_idx = 0;
+
+		foreach ( WC()->cart->get_cart() as $cart_key => $cart_item ) {
+			if ( ! $this->cart_item_has_storefront_config( $cart_item ) ) {
+				continue;
+			}
+
+			$fingerprint = $this->configuration_fingerprint( $cart_item );
+
+			if ( isset( $seen[ $fingerprint ] ) ) {
+				continue;
+			}
+
+			$seen[ $fingerprint ] = true;
+			$letter               = $this->configuration_letter_for_index( $letter_idx );
+			++$letter_idx;
+
+			$product    = $cart_item['data'] ?? null;
+			$product_id = $product instanceof \WC_Product ? $product->get_id() : 0;
+			$edit_url   = '';
+
+			if ( $product instanceof \WC_Product ) {
+				if ( $product->is_type( 'variation' ) ) {
+					$parent = wc_get_product( $product->get_parent_id() );
+					$edit_url = $parent instanceof \WC_Product ? (string) $parent->get_permalink() : '';
+				} else {
+					$edit_url = (string) $product->get_permalink();
+				}
+			}
+
+			$shop_url = function_exists( 'wc_get_page_permalink' ) ? wc_get_page_permalink( 'shop' ) : home_url( '/' );
+			$title    = '';
+
+			if ( $product_id > 0 ) {
+				$preset = $this->get_preset_for_cart_item( $cart_item );
+
+				if ( null !== $preset ) {
+					$manual = $preset->product_options();
+
+					if ( ! empty( $manual['subtitle'] ) ) {
+						$title = sanitize_text_field( (string) $manual['subtitle'] );
+					}
+				}
+			}
+
+			if ( '' === $title && $product instanceof \WC_Product ) {
+				$title = $product->get_name();
+			}
+
+			$profiles[] = array(
+				'letter'       => $letter,
+				'fingerprint'  => $fingerprint,
+				'title'        => $title,
+				'rows'         => $this->build_configuration_profile_rows( $cart_item ),
+				'price_class'  => $this->resolve_price_class_level( $cart_item ),
+				'edit_url'     => $edit_url,
+				'shop_url'     => $shop_url,
+				'cart_key'     => $cart_key,
+			);
+		}
+
+		return $profiles;
+	}
+
+	/**
+	 * Flatten drawing cards for the consolidated tekeningen section.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function get_drawing_cards(): array {
+		$cards = array();
+
+		foreach ( $this->get_display_groups() as $group ) {
+			$group_title   = (string) ( $group['group_title'] ?? '' );
+			$preview_image = (string) ( $group['preview_image'] ?? '' );
+			$edit_url      = (string) ( $group['edit_url'] ?? '' );
+
+			if ( '' === $group_title && '' === $preview_image ) {
+				continue;
+			}
+
+			$cards[] = array(
+				'title'         => $group_title,
+				'preview_image' => $preview_image,
+				'edit_url'      => $edit_url,
+			);
+		}
+
+		return $cards;
+	}
+
+	/**
+	 * @return array<string, string> Fingerprint => letter.
+	 */
+	private function get_configuration_letter_map(): array {
+		$map = array();
+
+		foreach ( $this->get_configuration_profiles() as $profile ) {
+			$fingerprint = (string) ( $profile['fingerprint'] ?? '' );
+			$letter      = (string) ( $profile['letter'] ?? '' );
+
+			if ( '' !== $fingerprint && '' !== $letter ) {
+				$map[ $fingerprint ] = $letter;
+			}
+		}
+
+		return $map;
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $parts  Part rows.
+	 * @param string                           $letter Config letter.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function tag_parts_with_config_letter( array $parts, string $letter ): array {
+		$letter = strtoupper( $letter );
+
+		if ( '' === $letter ) {
+			return $parts;
+		}
+
+		return array_map(
+			static function ( array $part ) use ( $letter ): array {
+				$part['config_letter'] = $letter;
+
+				return $part;
+			},
+			$parts
+		);
+	}
+
+	/**
+	 * Merge cart groups that share the same group title and tag parts with config letters.
+	 *
+	 * @deprecated Use get_display_groups() — groups are no longer merged by title.
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function get_merged_display_groups(): array {
+		return $this->get_display_groups();
+	}
+
+	/**
+	 * @param array<string, mixed> $cart_item Cart item.
+	 * @return bool
+	 */
+	private function cart_item_has_storefront_config( array $cart_item ): bool {
+		if ( CartHandler::is_product_breakdown_item( $cart_item ) ) {
+			return true;
+		}
+
+		return ! empty( $cart_item['kcp_color'] )
+			|| ! empty( $cart_item['kcp_height'] )
+			|| ! empty( $cart_item['kcp_selected_options'] );
+	}
+
+	/**
+	 * @param array<string, mixed> $cart_item Cart item.
+	 * @return string
+	 */
+	private function configuration_fingerprint( array $cart_item ): string {
+		$parts = array(
+			'product:' . (int) ( $cart_item['product_id'] ?? 0 ),
+		);
+
+		if ( ! empty( $cart_item['kcp_color'] ) ) {
+			$parts[] = 'color:' . sanitize_key( (string) $cart_item['kcp_color'] );
+		}
+
+		if ( ! empty( $cart_item['kcp_height'] ) ) {
+			$parts[] = 'height:' . sanitize_key( (string) $cart_item['kcp_height'] );
+		}
+
+		$selected = is_array( $cart_item['kcp_selected_options'] ?? null )
+			? $cart_item['kcp_selected_options']
+			: array();
+
+		if ( ! empty( $selected ) ) {
+			$option_parts = array();
+
+			foreach ( $selected as $group_id => $option ) {
+				if ( ! is_array( $option ) ) {
+					continue;
+				}
+
+				$option_parts[ sanitize_key( (string) $group_id ) ] = sanitize_key( (string) ( $option['id'] ?? '' ) );
+			}
+
+			ksort( $option_parts );
+
+			foreach ( $option_parts as $group_id => $option_id ) {
+				$parts[] = $group_id . ':' . $option_id;
+			}
+		}
+
+		return md5( implode( '|', $parts ) );
+	}
+
+	/**
+	 * @param int $index Zero-based profile index.
+	 * @return string
+	 */
+	private function configuration_letter_for_index( int $index ): string {
+		$index = max( 0, $index );
+
+		if ( $index < 26 ) {
+			return chr( 65 + $index );
+		}
+
+		return 'A' . (string) ( $index - 25 );
+	}
+
+	/**
+	 * Resolve the WooCommerce product ID used to load a linked preset.
+	 *
+	 * @param array<string, mixed> $cart_item Cart item.
+	 * @return int
+	 */
+	private function wc_product_id_for_preset( array $cart_item ): int {
+		$product_id = (int) ( $cart_item['product_id'] ?? 0 );
+
+		if ( $product_id > 0 ) {
+			return $product_id;
+		}
+
+		$product = $cart_item['data'] ?? null;
+
+		if ( ! $product instanceof \WC_Product ) {
+			return 0;
+		}
+
+		if ( $product->is_type( 'variation' ) ) {
+			return (int) $product->get_parent_id();
+		}
+
+		return (int) $product->get_id();
+	}
+
+	/**
+	 * @param array<string, mixed> $cart_item Cart item.
+	 * @return \KitchenConfiguratorPro\Domain\Entities\ProductPreset|null
+	 */
+	private function get_preset_for_cart_item( array $cart_item ): ?\KitchenConfiguratorPro\Domain\Entities\ProductPreset {
+		$product_id = $this->wc_product_id_for_preset( $cart_item );
+
+		if ( $product_id <= 0 ) {
+			return null;
+		}
+
+		/** @var ProductPresetRepository $presets */
+		$presets = $this->container->get( ProductPresetRepository::class );
+		$preset  = $presets->find_by_wc_product_id( $product_id );
+
+		return ( null !== $preset && $preset->is_active ) ? $preset : null;
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $items Option items.
+	 * @param string                           $item_id Selected item ID.
+	 * @return string
+	 */
+	private function option_item_label_from_items( array $items, string $item_id ): string {
+		$item_id = sanitize_key( $item_id );
+
+		foreach ( $items as $item ) {
+			if ( ! is_array( $item ) ) {
+				continue;
+			}
+
+			if ( sanitize_key( (string) ( $item['id'] ?? '' ) ) !== $item_id ) {
+				continue;
+			}
+
+			$label = sanitize_text_field( (string) ( $item['label'] ?? $item['value'] ?? '' ) );
+
+			return '' !== $label ? $label : $item_id;
+		}
+
+		return $item_id;
+	}
+
+	/**
+	 * Selected storefront options stored on the cart line or rebuilt from cart meta.
+	 *
+	 * @param array<string, mixed> $cart_item Cart item.
+	 * @return array<string, array{id: string, label: string}>
+	 */
+	private function resolve_cart_selected_options( array $cart_item ): array {
+		$stored = is_array( $cart_item['kcp_selected_options'] ?? null )
+			? $cart_item['kcp_selected_options']
+			: array();
+
+		if ( ! empty( $stored ) ) {
+			return $stored;
+		}
+
+		$preset = $this->get_preset_for_cart_item( $cart_item );
+
+		if ( null === $preset ) {
+			return array();
+		}
+
+		/** @var ProductStorefrontOptionsBuilder $builder */
+		$builder = $this->container->get( ProductStorefrontOptionsBuilder::class );
+		$options = $builder->build( $preset );
+		$groups  = is_array( $options['option_groups'] ?? null ) ? $options['option_groups'] : array();
+		$selected = array();
+		$color    = sanitize_key( (string) ( $cart_item['kcp_color'] ?? '' ) );
+		$height   = sanitize_key( (string) ( $cart_item['kcp_height'] ?? '' ) );
+
+		foreach ( $groups as $group ) {
+			if ( ! is_array( $group ) ) {
+				continue;
+			}
+
+			$group_id    = sanitize_key( (string) ( $group['id'] ?? '' ) );
+			$items       = is_array( $group['items'] ?? null ) ? $group['items'] : array();
+			$default_id  = sanitize_key( (string) ( $group['default_item'] ?? '' ) );
+			$resolved_id = '';
+			$label       = '';
+
+			if ( 'color' === $group_id && '' !== $color ) {
+				$resolved_id = $color;
+				$label         = (string) ( $cart_item['kcp_color_label'] ?? '' );
+			} elseif ( 'height' === $group_id && '' !== $height ) {
+				$resolved_id = $height;
+				$label         = (string) ( $cart_item['kcp_height_label'] ?? '' );
+			} elseif ( '' !== $default_id ) {
+				$resolved_id = $default_id;
+			}
+
+			if ( '' === $label && '' !== $resolved_id ) {
+				$label = $this->option_item_label_from_items( $items, $resolved_id );
+			}
+
+			if ( '' !== $resolved_id && '' !== $label ) {
+				$selected[ $group_id ] = array(
+					'id'    => $resolved_id,
+					'label' => $label,
+				);
+			}
+		}
+
+		return $selected;
+	}
+
+	/**
+	 * @param string $value Raw price-class value.
+	 * @return int
+	 */
+	private function parse_price_class_level( string $value ): int {
+		$value = trim( $value );
+
+		if ( '' === $value ) {
+			return 0;
+		}
+
+		if ( preg_match( '/(\d+)/', $value, $matches ) ) {
+			return min( 5, max( 0, (int) $matches[1] ) );
+		}
+
+		$filled = substr_count( $value, '●' ) + substr_count( $value, '•' ) + substr_count( $value, '*' );
+
+		if ( $filled > 0 ) {
+			return min( 5, $filled );
+		}
+
+		return 0;
+	}
+
+	/**
+	 * @param array<string, mixed> $cart_item Cart item.
+	 * @return array<int, array{label: string, value: string}>
+	 */
+	private function build_configuration_profile_rows( array $cart_item ): array {
+		$rows     = array();
+		$preset   = $this->get_preset_for_cart_item( $cart_item );
+		$groups   = array();
+		$selected = $this->resolve_cart_selected_options( $cart_item );
+
+		if ( null !== $preset ) {
+			/** @var ProductStorefrontOptionsBuilder $builder */
+			$builder = $this->container->get( ProductStorefrontOptionsBuilder::class );
+			$options = $builder->build( $preset );
+			$groups  = is_array( $options['option_groups'] ?? null ) ? $options['option_groups'] : array();
+		}
+
+		foreach ( $groups as $group ) {
+			if ( ! is_array( $group ) ) {
+				continue;
+			}
+
+			$group_id = sanitize_key( (string) ( $group['id'] ?? '' ) );
+
+			if ( '' === $group_id || ! isset( $selected[ $group_id ] ) || ! is_array( $selected[ $group_id ] ) ) {
+				continue;
+			}
+
+			$label = sanitize_text_field( (string) ( $group['label'] ?? '' ) );
+
+			if ( '' === $label ) {
+				$label = ucfirst( str_replace( array( '-', '_' ), ' ', $group_id ) );
+			}
+
+			if ( false !== stripos( $group_id, 'prijsklasse' ) || false !== stripos( $label, 'prijsklasse' ) ) {
+				continue;
+			}
+
+			$value = sanitize_text_field( (string) ( $selected[ $group_id ]['label'] ?? '' ) );
+
+			if ( '' === $value ) {
+				continue;
+			}
+
+			$rows[] = array(
+				'label' => $label,
+				'value' => $value,
+			);
+		}
+
+		if ( ! empty( $rows ) ) {
+			return $rows;
+		}
+
+		foreach ( $selected as $group_id => $option ) {
+			if ( ! is_array( $option ) ) {
+				continue;
+			}
+
+			$group_key = sanitize_key( (string) $group_id );
+			$value     = sanitize_text_field( (string) ( $option['label'] ?? '' ) );
+
+			if ( '' === $value || false !== stripos( $group_key, 'prijsklasse' ) ) {
+				continue;
+			}
+
+			$rows[] = array(
+				'label' => ucfirst( str_replace( array( '-', '_' ), ' ', $group_key ) ),
+				'value' => $value,
+			);
+		}
+
+		if ( ! empty( $cart_item['kcp_color_label'] ) ) {
+			$rows[] = array(
+				'label' => __( 'Frontmateriaal', 'kitchen-configurator-pro' ),
+				'value' => (string) $cart_item['kcp_color_label'],
+			);
+		}
+
+		if ( ! empty( $cart_item['kcp_height_label'] ) ) {
+			$rows[] = array(
+				'label' => __( 'Hoogte', 'kitchen-configurator-pro' ),
+				'value' => (string) $cart_item['kcp_height_label'],
+			);
+		}
+
+		return $rows;
+	}
+
+	/**
+	 * @param array<string, mixed> $cart_item Cart item.
+	 * @return array<string, string>
+	 */
+	private function option_group_labels_for_cart_item( array $cart_item ): array {
+		$labels = array();
+		$preset = $this->get_preset_for_cart_item( $cart_item );
+
+		if ( null === $preset ) {
+			return $labels;
+		}
+
+		/** @var ProductStorefrontOptionsBuilder $builder */
+		$builder = $this->container->get( ProductStorefrontOptionsBuilder::class );
+		$options = $builder->build( $preset );
+		$groups  = is_array( $options['option_groups'] ?? null ) ? $options['option_groups'] : array();
+
+		foreach ( $groups as $group ) {
+			if ( ! is_array( $group ) ) {
+				continue;
+			}
+
+			$group_id = sanitize_key( (string) ( $group['id'] ?? '' ) );
+			$label    = sanitize_text_field( (string) ( $group['label'] ?? '' ) );
+
+			if ( '' === $group_id ) {
+				continue;
+			}
+
+			$labels[ $group_id ] = '' !== $label ? $label : ucfirst( str_replace( array( '-', '_' ), ' ', $group_id ) );
+		}
+
+		return $labels;
+	}
+
+	/**
+	 * @param array<string, mixed> $cart_item Cart item.
+	 * @return int Filled dots for prijsklasse (0–5).
+	 */
+	private function resolve_price_class_level( array $cart_item ): int {
+		$selected = $this->resolve_cart_selected_options( $cart_item );
+
+		foreach ( $selected as $group_id => $option ) {
+			if ( ! is_array( $option ) ) {
+				continue;
+			}
+
+			$group_key = sanitize_key( (string) $group_id );
+
+			if ( false === stripos( $group_key, 'prijsklasse' ) ) {
+				continue;
+			}
+
+			$level = $this->parse_price_class_level( (string) ( $option['id'] ?? '' ) );
+
+			if ( $level <= 0 ) {
+				$level = $this->parse_price_class_level( (string) ( $option['label'] ?? '' ) );
+			}
+
+			if ( $level > 0 ) {
+				return $level;
+			}
+		}
+
+		$preset = $this->get_preset_for_cart_item( $cart_item );
+
+		if ( null === $preset ) {
+			return 0;
+		}
+
+		$manual  = $preset->product_options();
+		$summary = is_array( $manual['summary'] ?? null ) ? $manual['summary'] : array();
+
+		foreach ( $summary as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+
+			$label = strtolower( sanitize_text_field( (string) ( $row['label'] ?? '' ) ) );
+			$value = (string) ( $row['value'] ?? '' );
+
+			if ( false === strpos( $label, 'prijsklasse' ) ) {
+				continue;
+			}
+
+			$level = $this->parse_price_class_level( $value );
+
+			if ( $level > 0 ) {
+				return $level;
+			}
+		}
+
+		return 0;
 	}
 
 	/**

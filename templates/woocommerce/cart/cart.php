@@ -14,6 +14,8 @@ use KitchenConfiguratorPro\Integration\WooCommerce\ShopPresenter;
 /** @var CartPresenter $presenter */
 $presenter        = kcp_plugin()->container()->get( CartPresenter::class );
 $groups           = $presenter->get_display_groups();
+$config_profiles  = $presenter->get_configuration_profiles();
+$drawing_cards    = $presenter->get_drawing_cards();
 $summary          = $presenter->get_configuration_summary();
 $plinth_lines     = $presenter->get_plinth_lines();
 $delivery_weeks   = $presenter->get_delivery_weeks();
@@ -53,7 +55,54 @@ do_action( 'woocommerce_before_cart' );
 		<?php endif; ?>
 	</header>
 
-	<?php if ( ! empty( $summary ) ) : ?>
+	<?php if ( ! empty( $config_profiles ) ) : ?>
+		<section class="kcp-cart-profiles" aria-label="<?php esc_attr_e( 'Configuratie groepen', 'kitchen-configurator-pro' ); ?>">
+			<div class="kcp-cart-profiles__grid<?php echo 1 === count( $config_profiles ) ? ' kcp-cart-profiles__grid--single' : ''; ?>">
+				<?php foreach ( $config_profiles as $profile ) : ?>
+					<?php
+					$letter      = strtoupper( (string) ( $profile['letter'] ?? '' ) );
+					$title       = (string) ( $profile['title'] ?? '' );
+					$rows        = is_array( $profile['rows'] ?? null ) ? $profile['rows'] : array();
+					$price_class = (int) ( $profile['price_class'] ?? 0 );
+					$edit_url    = (string) ( $profile['edit_url'] ?? '' );
+					$shop_url    = (string) ( $profile['shop_url'] ?? $shop_url );
+					?>
+					<article class="kcp-cart-profile">
+						<span class="kcp-cart-profile__badge" aria-hidden="true"><?php echo esc_html( $letter ); ?></span>
+						<?php if ( '' !== $title ) : ?>
+							<h2 class="kcp-cart-profile__title"><?php echo esc_html( $title ); ?></h2>
+						<?php endif; ?>
+						<?php if ( ! empty( $rows ) ) : ?>
+							<ul class="kcp-cart-profile__list">
+								<?php foreach ( $rows as $row ) : ?>
+									<li class="kcp-cart-profile__item">
+										<span class="kcp-cart-profile__label"><?php echo esc_html( (string) ( $row['label'] ?? '' ) ); ?></span>
+										<span class="kcp-cart-profile__value"><?php echo esc_html( (string) ( $row['value'] ?? '' ) ); ?></span>
+									</li>
+								<?php endforeach; ?>
+							</ul>
+						<?php endif; ?>
+						<?php if ( $price_class > 0 ) : ?>
+							<div class="kcp-cart-profile__price-class">
+								<span class="kcp-cart-profile__price-class-label"><?php esc_html_e( 'prijsklasse', 'kitchen-configurator-pro' ); ?></span>
+								<span class="kcp-cart-profile__dots" aria-label="<?php echo esc_attr( sprintf( __( 'Prijsklasse %d van 5', 'kitchen-configurator-pro' ), $price_class ) ); ?>">
+									<?php for ( $dot = 1; $dot <= 5; $dot++ ) : ?>
+										<span class="kcp-cart-profile__dot<?php echo $dot <= $price_class ? ' is-filled' : ''; ?>"></span>
+									<?php endfor; ?>
+								</span>
+							</div>
+						<?php endif; ?>
+						<div class="kcp-cart-profile__footer">
+							<?php if ( '' !== $edit_url ) : ?>
+								<a href="<?php echo esc_url( $edit_url ); ?>" class="kcp-cart-profile__link"><?php esc_html_e( 'wijzigen', 'kitchen-configurator-pro' ); ?></a>
+							<?php endif; ?>
+							<a href="<?php echo esc_url( $shop_url ); ?>" class="kcp-cart-profile__link"><?php esc_html_e( 'kast toevoegen', 'kitchen-configurator-pro' ); ?></a>
+						</div>
+					</article>
+				<?php endforeach; ?>
+			</div>
+		</section>
+	<?php elseif ( ! empty( $summary ) ) : ?>
 		<section class="kcp-cart-summary" aria-label="<?php esc_attr_e( 'Configuratie overzicht', 'kitchen-configurator-pro' ); ?>">
 			<ul class="kcp-cart-summary__list">
 				<?php foreach ( $summary as $row ) : ?>
@@ -70,53 +119,65 @@ do_action( 'woocommerce_before_cart' );
 		</section>
 	<?php endif; ?>
 
+	<?php if ( ! empty( $drawing_cards ) ) : ?>
+		<section class="kcp-cart-drawings" aria-label="<?php esc_attr_e( 'Tekeningen', 'kitchen-configurator-pro' ); ?>">
+			<div class="kcp-cart-drawings__head">
+				<h2 class="kcp-cart-drawings__title"><?php esc_html_e( 'tekeningen', 'kitchen-configurator-pro' ); ?></h2>
+				<button type="button" class="kcp-cart-drawings__refresh" aria-label="<?php esc_attr_e( 'Tekeningen vernieuwen', 'kitchen-configurator-pro' ); ?>">
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+				</button>
+			</div>
+			<div class="kcp-cart-drawings__list">
+				<?php foreach ( $drawing_cards as $drawing ) : ?>
+					<?php
+					$draw_title  = (string) ( $drawing['title'] ?? '' );
+					$draw_image  = (string) ( $drawing['preview_image'] ?? '' );
+					$draw_edit   = (string) ( $drawing['edit_url'] ?? '' );
+					?>
+					<article class="kcp-cart-hero kcp-cart-hero--drawing">
+						<div class="kcp-cart-hero__aside">
+							<strong class="kcp-cart-hero__title"><?php echo esc_html( $draw_title ); ?></strong>
+							<?php if ( '' !== $draw_edit ) : ?>
+								<a href="<?php echo esc_url( $draw_edit ); ?>" class="kcp-cart-hero__edit">
+									<?php esc_html_e( 'bekijk en bewerk', 'kitchen-configurator-pro' ); ?>
+								</a>
+							<?php endif; ?>
+						</div>
+						<?php if ( '' !== $draw_image ) : ?>
+							<div class="kcp-cart-hero__image">
+								<img src="<?php echo esc_url( $draw_image ); ?>" alt="<?php echo esc_attr( $draw_title ); ?>" loading="lazy">
+							</div>
+						<?php endif; ?>
+					</article>
+				<?php endforeach; ?>
+			</div>
+		</section>
+	<?php endif; ?>
+
 	<form class="woocommerce-cart-form kcp-cart__form" action="<?php echo esc_url( wc_get_cart_url() ); ?>" method="post">
 		<?php do_action( 'woocommerce_before_cart_table' ); ?>
 
 		<div class="kcp-cart__products">
 			<?php foreach ( $groups as $group_index => $group ) : ?>
 				<?php
-				$cart_key         = (string) ( $group['cart_key'] ?? '' );
-				$group_title      = (string) ( $group['group_title'] ?? '' );
-				$preview_image    = (string) ( $group['preview_image'] ?? '' );
-				$edit_url         = (string) ( $group['edit_url'] ?? '' );
-				$remove_url       = (string) ( $group['remove_url'] ?? '' );
-				$empty_group_url  = '' !== $cart_key ? $presenter->get_empty_group_url( $cart_key ) : '';
-				$parts            = is_array( $group['parts'] ?? null ) ? $group['parts'] : array();
-				$has_breakdown    = count( $parts ) > 0;
-				$show_drawings    = '' !== $preview_image || '' !== $group_title;
+				$cart_key           = (string) ( $group['cart_key'] ?? '' );
+				$group_title        = (string) ( $group['group_title'] ?? '' );
+				$group_config       = (string) ( $group['config_letter'] ?? '' );
+				$remove_url         = (string) ( $group['remove_url'] ?? '' );
+				$empty_group_url    = '' !== $cart_key ? $presenter->get_empty_group_url( $cart_key ) : '';
+				$parts              = is_array( $group['parts'] ?? null ) ? $group['parts'] : array();
+				$has_breakdown   = count( $parts ) > 0;
 				?>
-				<section class="kcp-cart-product" data-kcp-group="<?php echo esc_attr( (string) $group_index ); ?>">
-					<?php if ( $show_drawings ) : ?>
-						<div class="kcp-cart-product__drawings">
-							<div class="kcp-cart-product__drawings-head">
-								<h2 class="kcp-cart-product__drawings-title"><?php esc_html_e( 'tekeningen', 'kitchen-configurator-pro' ); ?></h2>
-								<button type="button" class="kcp-cart-product__refresh" aria-label="<?php esc_attr_e( 'Tekeningen vernieuwen', 'kitchen-configurator-pro' ); ?>">
-									<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
-								</button>
-							</div>
-							<div class="kcp-cart-hero">
-								<div class="kcp-cart-hero__aside">
-									<strong class="kcp-cart-hero__title"><?php echo esc_html( $group_title ); ?></strong>
-									<?php if ( '' !== $edit_url ) : ?>
-										<a href="<?php echo esc_url( $edit_url ); ?>" class="kcp-cart-hero__edit">
-											<?php esc_html_e( 'bekijk en bewerk', 'kitchen-configurator-pro' ); ?>
-										</a>
-									<?php endif; ?>
-								</div>
-								<?php if ( '' !== $preview_image ) : ?>
-									<div class="kcp-cart-hero__image">
-										<img src="<?php echo esc_url( $preview_image ); ?>" alt="<?php echo esc_attr( $group_title ); ?>" loading="lazy">
-									</div>
-								<?php endif; ?>
-							</div>
-						</div>
-					<?php endif; ?>
-
+				<section class="kcp-cart-product" data-kcp-group="<?php echo esc_attr( (string) $group_index ); ?>"<?php echo '' !== $group_config ? ' data-kcp-config="' . esc_attr( $group_config ) . '"' : ''; ?>>
 					<?php if ( $has_breakdown ) : ?>
 						<div class="kcp-cart-breakdown">
 							<header class="kcp-cart-breakdown__header">
-								<h3 class="kcp-cart-breakdown__title"><?php echo esc_html( $group_title ); ?></h3>
+								<h3 class="kcp-cart-breakdown__title">
+									<?php if ( '' !== $group_config ) : ?>
+										<span class="kcp-cart-breakdown__config-badge" aria-hidden="true"><?php echo esc_html( strtoupper( $group_config ) ); ?></span>
+									<?php endif; ?>
+									<?php echo esc_html( $group_title ); ?>
+								</h3>
 								<div class="kcp-cart-breakdown__actions">
 									<?php if ( '' !== $empty_group_url ) : ?>
 										<a href="<?php echo esc_url( $empty_group_url ); ?>" class="kcp-cart-breakdown__action" data-kcp-confirm-empty>
@@ -141,15 +202,20 @@ do_action( 'woocommerce_before_cart' );
 									$duplicate_url = (string) ( $part['duplicate_url'] ?? '' );
 									$part_remove   = (string) ( $part['remove_url'] ?? '' );
 									$part_edit     = (string) ( $part['edit_url'] ?? '' );
+									$config_letter = strtoupper( (string) ( $part['config_letter'] ?? $group_config ) );
 									?>
 									<article class="kcp-cart-part" role="listitem">
 										<div class="kcp-cart-part__controls">
 											<span class="kcp-cart-part__drag" aria-hidden="true">
 												<svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor"><circle cx="3" cy="3" r="1.2"/><circle cx="9" cy="3" r="1.2"/><circle cx="3" cy="8" r="1.2"/><circle cx="9" cy="8" r="1.2"/><circle cx="3" cy="13" r="1.2"/><circle cx="9" cy="13" r="1.2"/></svg>
 											</span>
-											<span class="kcp-cart-part__reorder" aria-hidden="true">
-												<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 9l-4 3 4 3M16 15l4-3-4-3"/></svg>
-											</span>
+											<?php if ( '' !== $config_letter ) : ?>
+												<span class="kcp-cart-part__config-badge" title="<?php esc_attr_e( 'Configuratiegroep', 'kitchen-configurator-pro' ); ?>"><?php echo esc_html( $config_letter ); ?></span>
+											<?php else : ?>
+												<span class="kcp-cart-part__reorder" aria-hidden="true">
+													<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 9l-4 3 4 3M16 15l4-3-4-3"/></svg>
+												</span>
+											<?php endif; ?>
 										</div>
 
 										<div class="kcp-cart-part__thumb">
