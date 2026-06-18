@@ -52,11 +52,14 @@ final class Assets {
 		if ( 'kitchen-configurator_page_kcp-products' === $hook_suffix ) {
 			wp_enqueue_media();
 
+			$media_script = KCP_PLUGIN_DIR . 'assets/admin/js/product-preset-media.js';
+			$form_script  = KCP_PLUGIN_DIR . 'assets/admin/js/product-preset-form.js';
+
 			wp_enqueue_script(
 				'kcp-product-preset-media',
 				KCP_PLUGIN_URL . 'assets/admin/js/product-preset-media.js',
 				array( 'jquery' ),
-				KCP_VERSION,
+				is_readable( $media_script ) ? (string) filemtime( $media_script ) : KCP_VERSION,
 				true
 			);
 
@@ -74,7 +77,7 @@ final class Assets {
 				'kcp-product-preset-form',
 				KCP_PLUGIN_URL . 'assets/admin/js/product-preset-form.js',
 				array( 'kcp-product-preset-media' ),
-				KCP_VERSION,
+				is_readable( $form_script ) ? (string) filemtime( $form_script ) : KCP_VERSION,
 				true
 			);
 		}

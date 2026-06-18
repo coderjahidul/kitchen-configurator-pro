@@ -25,13 +25,22 @@
 			return 0;
 		}
 
-		const groupsWrap = document.querySelector( `[data-kcp-repeater="${ repeaterType }"] .kcp-repeater__rows` );
+		const groupsRepeater = group.closest( `[data-kcp-repeater="${ repeaterType }"]` );
+		const groupsWrap = groupsRepeater?.querySelector( '.kcp-repeater__rows' );
 
 		if ( ! groupsWrap ) {
 			return 0;
 		}
 
 		return Array.from( getRepeaterRows( groupsWrap ) ).indexOf( group );
+	};
+
+	const getRepeaterFromRowsWrap = ( rowsWrap ) => {
+		const repeater = rowsWrap?.parentElement;
+
+		return repeater instanceof HTMLElement && repeater.hasAttribute( 'data-kcp-repeater' )
+			? repeater
+			: null;
 	};
 
 	const reindexRowNames = ( row, index, type ) => {
@@ -181,60 +190,84 @@
 		} );
 	};
 
-	const bindRepeater = ( repeater ) => {
+	const handleAddClick = ( event ) => {
+		const button = event.target.closest( '[data-kcp-add]' );
+
+		if ( ! button ) {
+			return;
+		}
+
+		const repeater = button.closest( '[data-kcp-repeater]' );
+
+		if ( ! repeater || button.closest( '[data-kcp-repeater]' ) !== repeater ) {
+			return;
+		}
+
 		const rowsWrap = repeater.querySelector( '.kcp-repeater__rows' );
 
 		if ( ! rowsWrap ) {
 			return;
 		}
 
-		repeater.querySelectorAll( '[data-kcp-add]' ).forEach( ( button ) => {
-			button.addEventListener( 'click', () => {
-				const rows = getRepeaterRows( rowsWrap );
-				const template = rows[ rows.length - 1 ];
+		event.preventDefault();
+		event.stopPropagation();
 
-				if ( ! template ) {
-					return;
-				}
+		const rows = getRepeaterRows( rowsWrap );
+		const template = rows[ rows.length - 1 ];
 
-				const clone = template.cloneNode( true );
-				clearRowValues( clone );
-				unbindImagePickers( clone );
-				rowsWrap.appendChild( clone );
-				reindexRepeater( repeater );
-				initImagePickers( clone );
-			} );
-		} );
+		if ( ! template ) {
+			return;
+		}
 
-		repeater.addEventListener( 'click', ( event ) => {
-			const target = event.target;
+		const clone = template.cloneNode( true );
+		clearRowValues( clone );
+		unbindImagePickers( clone );
+		rowsWrap.appendChild( clone );
+		reindexRepeater( repeater );
+		initImagePickers( clone );
+	};
 
-			if ( ! ( target instanceof HTMLElement ) || ! target.classList.contains( 'kcp-repeater__remove' ) ) {
-				return;
-			}
+	const handleRemoveClick = ( event ) => {
+		const target = event.target;
 
-			const row = target.closest( '.kcp-repeater__row, fieldset.kcp-option-group, fieldset.kcp-part-group' );
+		if ( ! ( target instanceof HTMLElement ) || ! target.classList.contains( 'kcp-repeater__remove' ) ) {
+			return;
+		}
 
-			if ( ! row || ! rowsWrap.contains( row ) ) {
-				return;
-			}
+		const row = target.closest( '.kcp-repeater__row, fieldset.kcp-option-group, fieldset.kcp-part-group' );
+		const rowsWrap = row?.parentElement;
 
-			const rows = getRepeaterRows( rowsWrap );
+		if ( ! row || ! rowsWrap?.classList.contains( 'kcp-repeater__rows' ) ) {
+			return;
+		}
 
-			if ( rows.length <= 1 ) {
-				clearRowValues( row );
-				return;
-			}
+		const repeater = getRepeaterFromRowsWrap( rowsWrap );
 
-			row.remove();
-			reindexRepeater( repeater );
-		} );
+		if ( ! repeater ) {
+			return;
+		}
+
+		event.preventDefault();
+		event.stopPropagation();
+
+		const rows = getRepeaterRows( rowsWrap );
+
+		if ( rows.length <= 1 ) {
+			clearRowValues( row );
+			return;
+		}
+
+		row.remove();
+		reindexRepeater( repeater );
 	};
 
 	document.addEventListener( 'DOMContentLoaded', () => {
-		document.querySelectorAll( '[data-kcp-repeater]' ).forEach( ( repeater ) => {
-			bindRepeater( repeater );
-		} );
+		const form = document.querySelector( '.kcp-product-preset-form__form' );
+
+		if ( form ) {
+			form.addEventListener( 'click', handleAddClick );
+			form.addEventListener( 'click', handleRemoveClick );
+		}
 
 		document.addEventListener( 'change', ( event ) => {
 			const target = event.target;
