@@ -1,0 +1,172 @@
+/**
+ * Kitchen Configurator Pro — KKF thank you page.
+ */
+
+body.kcp-thankyou-active {
+	--kcp-thankyou-bg: #f2f2f1;
+	--kcp-thankyou-text: #0b0b0b;
+	background: var(--kcp-thankyou-bg) !important;
+	color: var(--kcp-thankyou-text);
+}
+
+
+body.kcp-thankyou-active .ast-article-single,
+body.kcp-thankyou-active .entry-content,
+body.kcp-thankyou-active .site-content,
+body.kcp-thankyou-active #page {
+	background: var(--kcp-thankyou-bg) !important;
+}
+
+body.kcp-thankyou-active .woocommerce-breadcrumb,
+body.kcp-thankyou-active header.entry-header,
+body.kcp-thankyou-active .entry-header,
+body.kcp-thankyou-active .page-header,
+body.kcp-thankyou-active .woocommerce-thankyou-order-details,
+body.kcp-thankyou-active .woocommerce-order-overview,
+body.kcp-thankyou-active .woocommerce-thankyou-order-received,
+body.kcp-thankyou-active .woocommerce-info,
+body.kcp-thankyou-active .woocommerce-order.kcp-thankyou > p,
+body.kcp-thankyou-active .woocommerce-order-details,
+body.kcp-thankyou-active .woocommerce-customer-details {
+	display: none !important;
+}
+
+body.kcp-thankyou-active .site-content,
+body.kcp-thankyou-active .site-content .ast-container,
+body.kcp-thankyou-active .site-content .content-area,
+body.kcp-thankyou-active .site-content .site-main,
+body.kcp-thankyou-active .site-content .entry-content {
+	max-width: none;
+	width: 100%;
+	margin: 0;
+	padding: 0;
+}
+
+body.kcp-thankyou-active .site-content .site-main {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 100vh;
+}
+
+body.kcp-thankyou-active .woocommerce {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	max-width: none;
+	min-height: 100vh;
+	margin: 0;
+	padding: 48px 24px;
+}
+
+.kcp-thankyou__content--fallback {
+	width: 100%;
+}
+
+.kcp-thankyou {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	min-height: 100vh;
+	text-align: center;
+}
+
+.kcp-thankyou__content {
+	max-width: 920px;
+	margin: 0 auto;
+}
+
+.kcp-thankyou__title,
+.kcp-thankyou__title span {
+	margin: 0;
+	font-size: clamp(3.5rem, 9vw, 6.25rem);
+	font-weight: 400 !important;
+	line-height: 1.08;
+	letter-spacing: -0.02em;
+	text-transform: lowercase !important;
+	color: var(--kcp-thankyou-text);
+}
+
+.kcp-thankyou__title {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.kcp-thankyou__title span {
+	display: block;
+}
+
+.kcp-thankyou__message {
+	margin-top: clamp(2rem, 4vw, 3.5rem);
+	font-size: clamp(1rem, 1.6vw, 1.25rem);
+	font-weight: 400;
+	line-height: 1.55;
+	color: var(--kcp-thankyou-text);
+}
+
+.kcp-thankyou__message p {
+	display: block;
+	margin: 0;
+}
+
+.kcp-thankyou__message p + p {
+	margin-top: 0.35em;
+}
+
+.kcp-thankyou__actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 16px;
+	margin-top: 2.5rem;
+}
+
+.kcp-thankyou__button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 180px;
+	padding: 14px 28px;
+	border: 1px solid var(--kcp-thankyou-text);
+	background: var(--kcp-thankyou-text);
+	color: var(--kcp-thankyou-bg);
+	font-size: 0.95rem;
+	font-weight: 600;
+	line-height: 1.2;
+	text-decoration: none;
+	text-transform: lowercase;
+	transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.kcp-thankyou__button:hover,
+.kcp-thankyou__button:focus-visible {
+	background: transparent;
+	color: var(--kcp-thankyou-text);
+}
+
+.kcp-thankyou__button--secondary {
+	background: transparent;
+	color: var(--kcp-thankyou-text);
+}
+
+.kcp-thankyou__button--secondary:hover,
+.kcp-thankyou__button--secondary:focus-visible {
+	background: var(--kcp-thankyou-text);
+	color: var(--kcp-thankyou-bg);
+}
+
+body.kcp-thankyou-active .woocommerce-form-login {
+	display: none !important;
+}
+
+@media (max-width: 768px) {
+	.kcp-thankyou__message {
+		max-width: 28rem;
+		margin-left: auto;
+		margin-right: auto;
+	}
+}

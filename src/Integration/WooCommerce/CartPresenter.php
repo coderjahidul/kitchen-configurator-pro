@@ -97,6 +97,13 @@ final class CartPresenter {
 			);
 		}
 
+		if ( is_order_received_page() ) {
+			$allowed = array(
+				'checkout/thankyou.php',
+				'checkout/order-received.php',
+			);
+		}
+
 		if ( ! in_array( $template_name, $allowed, true ) ) {
 			return $template;
 		}
@@ -120,6 +127,11 @@ final class CartPresenter {
 
 		if ( is_checkout() && ! is_order_received_page() ) {
 			$classes[] = 'kcp-checkout-active';
+			$classes[] = 'kcp-shop-active';
+		}
+
+		if ( is_order_received_page() ) {
+			$classes[] = 'kcp-thankyou-active';
 			$classes[] = 'kcp-shop-active';
 		}
 
@@ -235,7 +247,7 @@ final class CartPresenter {
 	 * @return void
 	 */
 	public function enqueue_assets(): void {
-		if ( ! is_cart() && ( ! is_checkout() || is_order_received_page() ) ) {
+		if ( ! is_cart() && ! is_checkout() ) {
 			return;
 		}
 
@@ -249,6 +261,17 @@ final class CartPresenter {
 			array(),
 			KCP_VERSION
 		);
+
+		if ( is_order_received_page() ) {
+			wp_enqueue_style(
+				'kcp-thankyou',
+				KCP_PLUGIN_URL . 'assets/frontend/css/thankyou.css',
+				array( 'kcp-shop' ),
+				KCP_VERSION
+			);
+
+			return;
+		}
 
 		if ( is_cart() ) {
 			wp_enqueue_style(
