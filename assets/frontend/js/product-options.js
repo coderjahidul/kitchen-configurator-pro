@@ -106,6 +106,118 @@ function updateHeightPriceLabels( root, getHeightPrice ) {
 	} );
 }
 
+function getProductGallery( form ) {
+	return form.closest( '.product' )?.querySelector( '.woocommerce-product-gallery' ) || null;
+}
+
+function storeOriginalGalleryImage( gallery ) {
+	const image = gallery?.querySelector( '.woocommerce-product-gallery__image img' );
+	const link = image?.closest( 'a' );
+
+	if ( ! image || image.dataset.kcpOriginalSrc ) {
+		return;
+	}
+
+	image.dataset.kcpOriginalSrc = image.getAttribute( 'src' ) || '';
+	image.dataset.kcpOriginalSrcset = image.getAttribute( 'srcset' ) || '';
+	image.dataset.kcpOriginalSizes = image.getAttribute( 'sizes' ) || '';
+	image.dataset.kcpOriginalAlt = image.getAttribute( 'alt' ) || '';
+	image.dataset.kcpOriginalTitle = image.getAttribute( 'title' ) || '';
+
+	if ( link ) {
+		link.dataset.kcpOriginalHref = link.getAttribute( 'href' ) || '';
+	}
+}
+
+function setImageAttribute( image, name, value ) {
+	if ( value ) {
+		image.setAttribute( name, value );
+		return;
+	}
+
+	image.removeAttribute( name );
+}
+
+function updateProductGalleryImage( form, variation ) {
+	const gallery = getProductGallery( form );
+	const imageData = variation?.image || {};
+	const src = imageData.src || imageData.full_src || '';
+
+	if ( ! gallery || ! src ) {
+		return;
+	}
+
+	storeOriginalGalleryImage( gallery );
+
+	const image = gallery.querySelector( '.woocommerce-product-gallery__image img' );
+	const link = image?.closest( 'a' );
+
+	if ( ! image ) {
+		return;
+	}
+
+	image.setAttribute( 'src', src );
+	setImageAttribute( image, 'srcset', imageData.srcset || '' );
+	setImageAttribute( image, 'sizes', imageData.sizes || '' );
+	setImageAttribute( image, 'alt', imageData.alt || '' );
+	setImageAttribute( image, 'title', imageData.title || '' );
+
+	if ( link && imageData.full_src ) {
+		link.setAttribute( 'href', imageData.full_src );
+	}
+
+	if ( typeof jQuery !== 'undefined' ) {
+		jQuery( gallery ).trigger( 'woocommerce_gallery_reset_slide_position' );
+	}
+}
+
+function updateProductGalleryImageUrl( form, src, alt = '' ) {
+	const gallery = getProductGallery( form );
+
+	if ( ! gallery || ! src ) {
+		return;
+	}
+
+	storeOriginalGalleryImage( gallery );
+
+	const image = gallery.querySelector( '.woocommerce-product-gallery__image img' );
+	const link = image?.closest( 'a' );
+
+	if ( ! image ) {
+		return;
+	}
+
+	image.setAttribute( 'src', src );
+	image.setAttribute( 'alt', alt );
+	setImageAttribute( image, 'srcset', '' );
+	setImageAttribute( image, 'sizes', '' );
+	setImageAttribute( image, 'title', alt );
+
+	if ( link ) {
+		link.setAttribute( 'href', src );
+	}
+}
+
+function resetProductGalleryImage( form ) {
+	const gallery = getProductGallery( form );
+	const image = gallery?.querySelector( '.woocommerce-product-gallery__image img' );
+	const link = image?.closest( 'a' );
+
+	if ( ! image || ! image.dataset.kcpOriginalSrc ) {
+		return;
+	}
+
+	image.setAttribute( 'src', image.dataset.kcpOriginalSrc );
+	setImageAttribute( image, 'srcset', image.dataset.kcpOriginalSrcset || '' );
+	setImageAttribute( image, 'sizes', image.dataset.kcpOriginalSizes || '' );
+	setImageAttribute( image, 'alt', image.dataset.kcpOriginalAlt || '' );
+	setImageAttribute( image, 'title', image.dataset.kcpOriginalTitle || '' );
+
+	if ( link && link.dataset.kcpOriginalHref ) {
+		link.setAttribute( 'href', link.dataset.kcpOriginalHref );
+	}
+}
+
 function initOptionButtons( root, onChange ) {
 	root.querySelectorAll( '.kcp-option-bar' ).forEach( ( button ) => {
 		button.addEventListener( 'click', () => {
@@ -127,11 +239,20 @@ function initOptionButtons( root, onChange ) {
 }
 
 function initPresetOptions( root ) {
+	const form = root.closest( 'form.cart' );
 	const basePrice = Number( root.dataset.basePrice || 0 );
 	const colorInput = document.getElementById( 'kcp-selected-color' );
 	const heightInput = document.getElementById( 'kcp-selected-height' );
 	const priceNodes = document.querySelectorAll( '.kcp-live-price, .kcp-single-product__summary .price .kcp-price, .kcp-product-sticky__price .kcp-price' );
 	const groupIds = Array.from( root.querySelectorAll( '[data-kcp-group-id]' ) ).map( ( group ) => group.dataset.kcpGroupId || '' ).filter( Boolean );
+	let variations = [];
+
+	try {
+		const parsedVariations = form ? JSON.parse( form.dataset.productVariations || '[]' ) : [];
+		variations = Array.isArray( parsedVariations ) ? parsedVariations : [];
+	} catch ( error ) {
+		variations = [];
+	}
 
 	const getActiveModifier = ( group ) => {
 		const active = root.querySelector( `[data-kcp-option-group="${ group }"].kcp-option-bar--active` );
@@ -154,6 +275,49 @@ function initPresetOptions( root ) {
 
 	const getHeightPrice = ( button ) => basePrice + Number( button.dataset.kcpOptionModifier || 0 );
 
+	const getSelectedPresetValues = () => {
+		return Array.from( root.querySelectorAll( '.kcp-option-bar--active' ) )
+			.map( ( button ) => button.dataset.kcpOptionId || '' )
+			.filter( Boolean );
+	};
+
+	const variationHasValue = ( variation, value ) => {
+		return Object.values( variation.attributes || {} ).includes( value );
+	};
+
+	const findPresetVariation = () => {
+		const values = getSelectedPresetValues().filter( ( value ) => {
+			return variations.some( ( variation ) => variationHasValue( variation, value ) );
+		} );
+
+		if ( ! values.length ) {
+			return null;
+		}
+
+		return variations.find( ( variation ) => {
+			return values.every( ( value ) => variationHasValue( variation, value ) );
+		} ) || null;
+	};
+
+	const updatePresetGalleryImage = ( button ) => {
+		if ( ! form || 'color' !== button.dataset.kcpOptionGroup ) {
+			return;
+		}
+
+		const variation = findPresetVariation();
+
+		if ( variation?.image?.src || variation?.image?.full_src ) {
+			updateProductGalleryImage( form, variation );
+			return;
+		}
+
+		const thumb = button.querySelector( '.kcp-option-bar__thumb img' );
+
+		if ( thumb?.src ) {
+			updateProductGalleryImageUrl( form, thumb.src, thumb.alt || button.textContent.trim() );
+		}
+	};
+
 	initOptionButtons( root, ( button, group ) => {
 		const optionInput = document.getElementById( `kcp-selected-${ group }` );
 
@@ -170,6 +334,7 @@ function initPresetOptions( root ) {
 		}
 
 		updatePrices();
+		updatePresetGalleryImage( button );
 
 		if ( group === 'height' ) {
 			updateHeightPriceLabels( root, getHeightPrice );
@@ -182,6 +347,12 @@ function initPresetOptions( root ) {
 
 	updatePrices();
 	updateHeightPriceLabels( root, getHeightPrice );
+
+	const activeColor = root.querySelector( '[data-kcp-option-group="color"].kcp-option-bar--active' );
+
+	if ( activeColor ) {
+		updatePresetGalleryImage( activeColor );
+	}
 }
 
 function initVariationOptions( root ) {
@@ -225,7 +396,8 @@ function initVariationOptions( root ) {
 	let variations = [];
 
 	try {
-		variations = JSON.parse( form.dataset.productVariations || '[]' );
+		const parsedVariations = JSON.parse( form.dataset.productVariations || '[]' );
+		variations = Array.isArray( parsedVariations ) ? parsedVariations : [];
 	} catch ( error ) {
 		variations = [];
 	}
@@ -290,11 +462,13 @@ function initVariationOptions( root ) {
 
 	$form.on( 'found_variation', ( event, variation ) => {
 		updatePrices( variation.display_price );
+		updateProductGalleryImage( form, variation );
 		syncActiveFromSelects();
 	} );
 
 	$form.on( 'reset_data', () => {
 		updatePrices( root.dataset.basePrice );
+		resetProductGalleryImage( form );
 		syncActiveFromSelects();
 	} );
 
