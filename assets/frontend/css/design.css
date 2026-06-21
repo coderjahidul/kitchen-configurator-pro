@@ -1,0 +1,646 @@
+/**
+ * Kitchen Configurator Pro — design step styles.
+ * Matched to configurator.keukenkastenfabriek.nl ontwerp-jouw-keuken layout.
+ */
+
+/* ── Theme overrides ─────────────────────────────────────────────── */
+
+body.kcp-design-active {
+	background: #f0efee !important;
+}
+
+body.kcp-design-active .site-content .ast-container,
+body.kcp-design-active .site-content .content-area,
+body.kcp-design-active .ast-plain-container .site-content,
+body.kcp-design-active .ast-separate-container .site-content {
+	max-width: none;
+	padding-left: 0;
+	padding-right: 0;
+}
+
+body.kcp-design-active #primary {
+	margin-top: 0;
+	margin-bottom: 0;
+}
+
+body.kcp-design-active .entry-header,
+body.kcp-design-active .entry-title,
+body.kcp-design-active .ast-single-entry-banner {
+	display: none !important;
+}
+
+body.kcp-design-active .entry-content > .wp-block-paragraph:empty {
+	display: none;
+}
+
+/* ── Page shell ──────────────────────────────────────────────────── */
+
+.kcp-design {
+	--kcp-design-bg: #f0efee;
+	--kcp-design-text: #000;
+	--kcp-design-muted: #a49d93;
+	--kcp-design-accent: #a49d93;
+	min-height: 100vh;
+	background: var( --kcp-design-bg );
+	color: var( --kcp-design-text );
+	font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+	font-size: 20px;
+	font-weight: 400;
+	line-height: 1.4;
+	-webkit-font-smoothing: antialiased;
+}
+
+.kcp-design *,
+.kcp-design *::before,
+.kcp-design *::after {
+	box-sizing: border-box;
+}
+
+.kcp-design__page {
+	width: min( 100%, 1280px );
+	margin: 0 auto;
+	padding: 24px clamp( 16px, 4vw, 48px ) 48px;
+}
+
+/* ── Intro ───────────────────────────────────────────────────────── */
+
+.kcp-design__intro {
+	max-width: 980px;
+	margin: 0 auto 0;
+	text-align: center;
+}
+
+.kcp-design__intro-header {
+	position: relative;
+	margin-bottom: 16px;
+	padding-bottom: 12px;
+}
+
+.kcp-design__title {
+	margin: 0;
+	font-size: clamp( 2.25rem, 5vw, 3.75rem );
+	font-weight: 500;
+	line-height: 1.05;
+	text-transform: lowercase;
+	color: var( --kcp-design-text );
+}
+
+.kcp-design__link {
+	position: relative;
+	display: inline-block;
+	padding: 6.5px 0;
+	color: var( --kcp-design-text );
+	font-size: 14px;
+	font-weight: 500;
+	line-height: 1.2;
+	text-decoration: none;
+	text-transform: lowercase;
+	white-space: nowrap;
+	transition: color 0.2s ease;
+}
+
+.kcp-design__link::after {
+	content: "";
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	border-bottom: 2px solid var( --kcp-design-text );
+}
+
+.kcp-design__link:hover,
+.kcp-design__link:focus-visible {
+	color: var( --kcp-design-text );
+	text-decoration: none;
+}
+
+.kcp-design__link--back {
+	position: absolute;
+	top: 50%;
+	right: 0;
+	transform: translateY( -50% );
+}
+
+.kcp-design__description {
+	max-width: 650px;
+	margin: 0 auto 28px;
+	font-size: inherit;
+	font-weight: 400;
+	line-height: 1.35;
+	text-transform: lowercase;
+	color: var( --kcp-design-text );
+}
+
+/* ── Legend ──────────────────────────────────────────────────────── */
+
+.kcp-design__legend {
+	display: table;
+	margin: 0 auto 30px;
+	padding: 0;
+	border: 0;
+	text-align: center;
+}
+
+.kcp-design__legend-item {
+	display: table-cell;
+	vertical-align: middle;
+	padding: 5px 20px 5px 5px;
+	border: 0;
+	background: transparent;
+	color: var( --kcp-design-text );
+	font: inherit;
+	font-size: 20px;
+	cursor: pointer;
+	text-transform: lowercase;
+	white-space: nowrap;
+}
+
+.kcp-design__legend-item:hover .kcp-design__legend-label {
+	text-decoration: underline;
+}
+
+.kcp-design__legend-swatch {
+	display: inline-block;
+	vertical-align: middle;
+	width: 30px;
+	height: 30px;
+	border: 2px solid #000;
+	border-radius: 3px;
+	background: #fff;
+	overflow: hidden;
+}
+
+.kcp-design__legend-swatch--empty {
+	background: #fff;
+}
+
+.kcp-design__legend-swatch img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.kcp-design__legend-label {
+	display: inline-block;
+	vertical-align: middle;
+	padding-left: 15px;
+	font-size: 20px;
+	font-weight: 400;
+}
+
+/* ── Cabinet stage ───────────────────────────────────────────────── */
+
+.kcp-design__stage {
+	display: flex;
+	justify-content: center;
+	margin: 0 auto;
+}
+
+.kcp-design__cabinet {
+	width: min( 100%, 980px );
+	margin: 0 auto;
+}
+
+.kcp-design__visual {
+	position: relative;
+	width: 100%;
+	line-height: 0;
+}
+
+.kcp-design__image {
+	width: 100%;
+	height: auto;
+	display: block;
+	object-fit: contain;
+	object-position: center center;
+}
+
+.kcp-design__image--placeholder {
+	min-height: clamp( 320px, 50vw, 520px );
+	background: linear-gradient( 180deg, rgba( 255, 255, 255, 0.35 ), rgba( 0, 0, 0, 0.03 ) );
+}
+
+.kcp-design__hotspots {
+	position: absolute;
+	inset: 0;
+}
+
+.kcp-design__hotspot {
+	position: absolute;
+	z-index: 2;
+	display: block;
+	width: 45px;
+	height: 45px;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: var( --kcp-design-accent );
+	transform: translate( -50%, -50% );
+	cursor: pointer;
+}
+
+.kcp-design__hotspot::before {
+	content: "";
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	z-index: -1;
+	width: 45px;
+	height: 45px;
+	border: 2px solid var( --kcp-design-accent );
+	border-radius: 999px;
+	background: #090909;
+	box-sizing: border-box;
+	transform: translate( -50%, -50% );
+	transition: width 0.4s ease, height 0.4s ease;
+}
+
+.kcp-design__hotspot:hover::before,
+.kcp-design__hotspot.is-active::before {
+	width: 60px;
+	height: 60px;
+}
+
+.kcp-design__hotspot-icon {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	z-index: 1;
+	color: #fff;
+	font-size: 1rem;
+	line-height: 1;
+	transform: translate( -50%, -50% );
+}
+
+/* ── Footer nav (inside cabinet holder) ─────────────────────────── */
+
+.kcp-design__nav {
+	display: block;
+	width: 100%;
+	max-width: 450px;
+	margin: 28px auto 0;
+	text-align: center;
+}
+
+.kcp-design__nav .kcp-design__link {
+	margin: 0 20px;
+	font-size: 15px;
+}
+
+/* ── Modal ───────────────────────────────────────────────────────── */
+
+.kcp-design-modal {
+	position: fixed;
+	inset: 0;
+	z-index: 10000;
+	overflow-y: auto;
+}
+
+.kcp-design-modal[hidden] {
+	display: none;
+}
+
+.kcp-design-modal__backdrop {
+	position: fixed;
+	inset: 0;
+	background: rgba( 0, 0, 0, 0.55 );
+}
+
+.kcp-design-modal__panel {
+	position: relative;
+	z-index: 1;
+	width: min( 1180px, calc( 100vw - 24px ) );
+	margin: 24px auto 48px;
+	padding: 40px clamp( 20px, 5vw, 105px ) 48px;
+	background: #fff;
+	box-shadow: 0 12px 40px rgba( 0, 0, 0, 0.18 );
+}
+
+.kcp-design-modal__panel::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	right: 0;
+	left: 0;
+	border-top: 1px solid rgba( 164, 157, 147, 0.4 );
+}
+
+.kcp-design-modal__close {
+	position: absolute;
+	top: 16px;
+	right: 20px;
+	border: 0;
+	background: transparent;
+	font-size: 2rem;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.kcp-design-modal__head {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 24px;
+	margin-bottom: 28px;
+}
+
+.kcp-design-modal__title {
+	margin: 0;
+	font-size: clamp( 1.75rem, 3vw, 2.25rem );
+	font-weight: 500;
+	line-height: 1.15;
+	text-transform: lowercase;
+	color: #090909;
+}
+
+.kcp-design-modal__promo {
+	flex: 0 1 320px;
+	margin: 0;
+	font-size: 15px;
+	line-height: 1.35;
+	text-align: right;
+	color: #090909;
+}
+
+.kcp-design-modal__promo-link {
+	display: inline;
+	margin-left: 4px;
+	color: inherit;
+	font-weight: 500;
+	text-decoration: underline;
+	text-transform: lowercase;
+}
+
+.kcp-design-modal__featured {
+	margin-bottom: 32px;
+	padding: 28px 24px 32px;
+	background: #eceae8;
+	border-radius: 4px;
+}
+
+.kcp-design-modal__more {
+	margin-bottom: 12px;
+}
+
+.kcp-design-modal__section-title {
+	margin: 0 0 24px;
+	font-size: 1.25rem;
+	font-weight: 500;
+	line-height: 1.2;
+	text-transform: lowercase;
+	color: #090909;
+}
+
+.kcp-design-modal__cards {
+	display: grid;
+	grid-template-columns: repeat( 5, minmax( 0, 1fr ) );
+	gap: 18px;
+}
+
+.kcp-design-modal__card {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	text-align: left;
+}
+
+.kcp-design-modal__card-media {
+	position: relative;
+	margin-bottom: 14px;
+}
+
+.kcp-design-modal__rank {
+	position: absolute;
+	top: 10px;
+	left: 10px;
+	z-index: 2;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	border-radius: 999px;
+	background: #fff;
+	font-size: 14px;
+	font-weight: 500;
+	line-height: 1;
+	color: #090909;
+}
+
+.kcp-design-modal__card-image {
+	height: 260px;
+	overflow: hidden;
+	border: 1px solid rgba( 164, 157, 147, 0.3 );
+	background: #fff;
+}
+
+.kcp-design-modal__card.is-selected .kcp-design-modal__card-image {
+	border-color: var( --kcp-design-accent );
+	box-shadow: inset 0 0 0 2px var( --kcp-design-accent );
+}
+
+.kcp-design-modal__card-image img,
+.kcp-design-modal__card-fallback {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.kcp-design-modal__card-name {
+	margin: 0 0 10px;
+	font-size: 1rem;
+	font-weight: 500;
+	line-height: 1.25;
+	text-transform: lowercase;
+	color: #090909;
+}
+
+.kcp-design-modal__price-class {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 10px;
+	font-size: 14px;
+	text-transform: lowercase;
+	color: #090909;
+}
+
+.kcp-design-modal__dots {
+	display: inline-flex;
+	gap: 4px;
+}
+
+.kcp-design-modal__dot {
+	width: 10px;
+	height: 10px;
+	border: 1px solid #090909;
+	border-radius: 999px;
+	background: transparent;
+}
+
+.kcp-design-modal__dot.is-filled {
+	background: #090909;
+}
+
+.kcp-design-modal__info {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0 0 12px;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: #090909;
+	font: inherit;
+	font-size: 14px;
+	cursor: pointer;
+	text-transform: lowercase;
+}
+
+.kcp-design-modal__info-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	border: 1px solid #090909;
+	border-radius: 999px;
+	font-size: 12px;
+	font-style: italic;
+	font-weight: 600;
+	line-height: 1;
+}
+
+.kcp-design-modal__info-label {
+	text-decoration: underline;
+}
+
+.kcp-design-modal__info-text {
+	margin: 0 0 12px;
+	font-size: 14px;
+	line-height: 1.45;
+	color: #444;
+}
+
+.kcp-design-modal__info-text[hidden] {
+	display: none;
+}
+
+.kcp-design-modal__select {
+	align-self: flex-start;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: #090909;
+	font: inherit;
+	font-size: 1rem;
+	font-weight: 500;
+	cursor: pointer;
+	text-decoration: underline;
+	text-transform: lowercase;
+}
+
+.kcp-design-modal__select:hover,
+.kcp-design-modal__info:hover {
+	opacity: 0.75;
+}
+
+.kcp-design-modal__empty {
+	margin: 0;
+	color: var( --kcp-design-muted );
+}
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+
+@media ( max-width: 900px ) {
+	.kcp-design-modal__cards {
+		grid-template-columns: repeat( 3, minmax( 0, 1fr ) );
+	}
+}
+
+@media ( max-width: 900px ) {
+	.kcp-design__page {
+		padding-top: 16px;
+	}
+
+	.kcp-design__link--back {
+		position: static;
+		display: block;
+		margin-top: 12px;
+		transform: none;
+	}
+
+	.kcp-design__legend {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 12px 18px;
+	}
+
+	.kcp-design__legend-item {
+		display: inline-flex;
+		align-items: center;
+		padding: 0;
+	}
+}
+
+@media ( max-width: 640px ) {
+	.kcp-design {
+		font-size: 16px;
+	}
+
+	.kcp-design__legend-label,
+	.kcp-design__legend-item {
+		font-size: 16px;
+	}
+
+	.kcp-design__cabinet {
+		min-height: 0;
+	}
+
+	.kcp-design__hotspot {
+		width: 40px;
+		height: 40px;
+	}
+
+	.kcp-design__hotspot::before {
+		width: 40px;
+		height: 40px;
+	}
+
+	.kcp-design__hotspot:hover::before,
+	.kcp-design__hotspot.is-active::before {
+		width: 52px;
+		height: 52px;
+	}
+
+	.kcp-design-modal__head {
+		flex-direction: column;
+	}
+
+	.kcp-design-modal__promo {
+		flex: none;
+		text-align: left;
+	}
+
+	.kcp-design-modal__cards {
+		grid-template-columns: repeat( 2, minmax( 0, 1fr ) );
+	}
+
+	.kcp-design-modal__card-image {
+		height: 200px;
+	}
+
+	.kcp-design-modal__panel {
+		margin: 12px auto 32px;
+		padding: 28px 16px 32px;
+	}
+}
+
+@media ( max-width: 420px ) {
+	.kcp-design__legend {
+		gap: 10px 14px;
+	}
+}

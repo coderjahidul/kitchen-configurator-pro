@@ -69,7 +69,7 @@ final class ColorsPage extends AbstractCrudPage {
 			'slug'           => array( 'type' => 'text', 'label' => __( 'Slug', 'kitchen-configurator-pro' ) ),
 			'hex_code'       => array( 'type' => 'text', 'label' => __( 'Hex Code', 'kitchen-configurator-pro' ), 'description' => __( 'Format: #FFFFFF', 'kitchen-configurator-pro' ) ),
 			'price_modifier' => array( 'type' => 'number', 'label' => __( 'Price Modifier', 'kitchen-configurator-pro' ), 'step' => '0.01', 'default' => 0 ),
-			'thumbnail_url'  => array( 'type' => 'url', 'label' => __( 'Thumbnail URL', 'kitchen-configurator-pro' ) ),
+			'thumbnail_url'  => array( 'type' => 'image', 'label' => __( 'Thumbnail', 'kitchen-configurator-pro' ) ),
 			'sort_order'     => array( 'type' => 'number', 'label' => __( 'Sort Order', 'kitchen-configurator-pro' ), 'default' => 0, 'min' => 0 ),
 			'is_active'      => array( 'type' => 'checkbox', 'label' => __( 'Active', 'kitchen-configurator-pro' ), 'default' => 1 ),
 		);

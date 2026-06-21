@@ -44,8 +44,18 @@ final class FrontendServiceProvider {
 		);
 
 		$this->container->singleton(
+			DesignShortcode::class,
+			static fn () => new DesignShortcode()
+		);
+
+		$this->container->singleton(
 			Assets::class,
 			static fn () => new Assets()
+		);
+
+		$this->container->singleton(
+			DesignAssets::class,
+			static fn () => new DesignAssets()
 		);
 	}
 
@@ -56,6 +66,8 @@ final class FrontendServiceProvider {
 	 */
 	public function boot(): void {
 		$this->container->get( Shortcode::class )->register();
+		$this->container->get( DesignShortcode::class )->register();
 		$this->container->get( Assets::class )->register();
+		$this->container->get( DesignAssets::class )->register();
 	}
 }

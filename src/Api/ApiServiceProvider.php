@@ -12,6 +12,7 @@ namespace KitchenConfiguratorPro\Api;
 use KitchenConfiguratorPro\Api\Controllers\CatalogController;
 use KitchenConfiguratorPro\Api\Controllers\CartController;
 use KitchenConfiguratorPro\Api\Controllers\ConfigurationController;
+use KitchenConfiguratorPro\Api\Controllers\DesignController;
 use KitchenConfiguratorPro\Api\Controllers\PricingController;
 use KitchenConfiguratorPro\Container;
 
@@ -47,6 +48,7 @@ final class ApiServiceProvider {
 			ConfigurationController::class,
 			PricingController::class,
 			CartController::class,
+			DesignController::class,
 		);
 
 		foreach ( $controllers as $controller_class ) {
@@ -77,6 +79,7 @@ final class ApiServiceProvider {
 			ConfigurationController::class,
 			PricingController::class,
 			CartController::class,
+			DesignController::class,
 		);
 
 		foreach ( $controllers as $controller_class ) {

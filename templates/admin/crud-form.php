@@ -95,6 +95,13 @@ defined( 'ABSPATH' ) || exit;
 										</option>
 									<?php endforeach; ?>
 								</select>
+							<?php elseif ( 'image' === $type ) : ?>
+								<?php
+								$name     = $field_key;
+								$id       = $field_id;
+								$modifier = (string) ( $field['modifier'] ?? '' );
+								require KCP_PLUGIN_DIR . 'templates/admin/partials/image-picker-field.php';
+								?>
 							<?php else : ?>
 								<input
 									type="<?php echo esc_attr( $type ); ?>"

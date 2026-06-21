@@ -304,7 +304,7 @@ abstract class AbstractCrudPage {
 		return match ( $type ) {
 			'textarea'        => sanitize_textarea_field( (string) $value ),
 			'number'          => is_numeric( $value ) ? $value : 0,
-			'url'             => esc_url_raw( (string) $value ),
+			'url', 'image'    => esc_url_raw( (string) $value ),
 			'json'            => $this->sanitize_json_field( (string) $value ),
 			'datetime-local'  => sanitize_text_field( (string) $value ),
 			'select'          => sanitize_text_field( (string) $value ),

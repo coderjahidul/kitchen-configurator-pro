@@ -36,6 +36,7 @@ use KitchenConfiguratorPro\Services\Pricing\PricingEngine;
 use KitchenConfiguratorPro\Services\CatalogService;
 use KitchenConfiguratorPro\Services\ConfigurationAuditService;
 use KitchenConfiguratorPro\Services\ConfigurationService;
+use KitchenConfiguratorPro\Services\DesignZoneCatalogService;
 use KitchenConfiguratorPro\Services\ValidationService;
 use KitchenConfiguratorPro\Security\ConfigurationSchemaValidator;
 
@@ -168,6 +169,18 @@ final class CoreServiceProvider {
 					$this->container->get( CatalogContextBuilder::class ),
 					$this->container->get( PriceHashGenerator::class ),
 					$calculators
+				);
+			}
+		);
+
+		$this->container->singleton(
+			DesignZoneCatalogService::class,
+			function () {
+				return new DesignZoneCatalogService(
+					$this->container->get( ColorRepository::class ),
+					$this->container->get( HandleRepository::class ),
+					$this->container->get( CabinetRepository::class ),
+					$this->container->get( PlinthRepository::class )
 				);
 			}
 		);

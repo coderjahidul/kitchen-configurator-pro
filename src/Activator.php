@@ -12,6 +12,8 @@ namespace KitchenConfiguratorPro;
 use KitchenConfiguratorPro\Database\Migrator;
 use KitchenConfiguratorPro\Integration\WooCommerce\ProductManager;
 use KitchenConfiguratorPro\Security\CapabilityManager;
+use KitchenConfiguratorPro\Services\DesignStepService;
+use KitchenConfiguratorPro\Services\ShopHeroService;
 
 /**
  * Handles plugin activation.
@@ -88,6 +90,8 @@ final class Activator {
 					'currency'            => 'EUR',
 					'quote_validity_days' => 30,
 					'design_check_price'  => 75,
+					'shop_hero'           => ShopHeroService::defaults(),
+					'design_step'         => DesignStepService::defaults(),
 				),
 				'',
 				false

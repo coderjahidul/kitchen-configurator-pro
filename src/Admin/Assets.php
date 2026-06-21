@@ -49,11 +49,10 @@ final class Assets {
 			true
 		);
 
-		if ( 'kitchen-configurator_page_kcp-products' === $hook_suffix ) {
+		if ( in_array( $hook_suffix, array( 'kitchen-configurator_page_kcp-products', 'kitchen-configurator_page_kcp-settings', 'kitchen-configurator_page_kcp-handles', 'kitchen-configurator_page_kcp-colors' ), true ) ) {
 			wp_enqueue_media();
 
 			$media_script = KCP_PLUGIN_DIR . 'assets/admin/js/product-preset-media.js';
-			$form_script  = KCP_PLUGIN_DIR . 'assets/admin/js/product-preset-form.js';
 
 			wp_enqueue_script(
 				'kcp-product-preset-media',
@@ -72,6 +71,22 @@ final class Assets {
 					'emptyLabel'   => __( 'No image selected', 'kitchen-configurator-pro' ),
 				)
 			);
+		}
+
+		if ( 'kitchen-configurator_page_kcp-settings' === $hook_suffix ) {
+			$hero_script = KCP_PLUGIN_DIR . 'assets/admin/js/shop-hero-settings.js';
+
+			wp_enqueue_script(
+				'kcp-shop-hero-settings',
+				KCP_PLUGIN_URL . 'assets/admin/js/shop-hero-settings.js',
+				array( 'kcp-product-preset-media' ),
+				is_readable( $hero_script ) ? (string) filemtime( $hero_script ) : KCP_VERSION,
+				true
+			);
+		}
+
+		if ( 'kitchen-configurator_page_kcp-products' === $hook_suffix ) {
+			$form_script = KCP_PLUGIN_DIR . 'assets/admin/js/product-preset-form.js';
 
 			wp_enqueue_script(
 				'kcp-product-preset-form',

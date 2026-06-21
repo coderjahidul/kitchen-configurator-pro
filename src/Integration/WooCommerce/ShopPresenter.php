@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace KitchenConfiguratorPro\Integration\WooCommerce;
 
 use KitchenConfiguratorPro\Integration\WooCommerce\ProductOptionsPresenter;
+use KitchenConfiguratorPro\Services\ShopHeroService;
 use KitchenConfiguratorPro\Services\WooVariationOptionsBuilder;
 
 /**
@@ -29,6 +30,7 @@ final class ShopPresenter {
 		add_filter( 'woocommerce_get_price_html', array( $this, 'format_price_html' ), 20, 2 );
 
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+		add_action( 'woocommerce_before_main_content', array( $this, 'render_shop_hero' ), 20 );
 		add_action( 'woocommerce_before_main_content', array( $this, 'render_shop_header' ), 25 );
 		add_action( 'woocommerce_single_product_summary', array( $this, 'render_product_label' ), 4 );
 		add_action( 'woocommerce_before_add_to_cart_form', array( $this, 'open_cart_anchor' ), 1 );
@@ -140,6 +142,20 @@ final class ShopPresenter {
 			KCP_VERSION
 		);
 
+		if ( is_shop() ) {
+			$hero_images = ShopHeroService::get_settings()['image_urls'] ?? array();
+
+			if ( is_array( $hero_images ) && count( $hero_images ) > 1 ) {
+				wp_enqueue_script(
+					'kcp-shop-hero',
+					KCP_PLUGIN_URL . 'assets/frontend/js/shop-hero.js',
+					array(),
+					KCP_VERSION,
+					true
+				);
+			}
+		}
+
 		if ( ! is_product() ) {
 			return;
 		}
@@ -173,6 +189,26 @@ final class ShopPresenter {
 			KCP_VERSION,
 			true
 		);
+	}
+
+	/**
+	 * Render the configurable shop hero section.
+	 *
+	 * @return void
+	 */
+	public function render_shop_hero(): void {
+		if ( ! is_shop() || ! ShopHeroService::is_enabled() ) {
+			return;
+		}
+
+		$hero = ShopHeroService::get_settings();
+		$path = KCP_PLUGIN_DIR . 'templates/woocommerce/partials/shop-hero.php';
+
+		if ( ! is_readable( $path ) ) {
+			return;
+		}
+
+		include $path;
 	}
 
 	/**

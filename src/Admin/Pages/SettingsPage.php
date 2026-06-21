@@ -10,6 +10,8 @@ declare(strict_types=1);
 namespace KitchenConfiguratorPro\Admin\Pages;
 
 use KitchenConfiguratorPro\Security\CapabilityManager;
+use KitchenConfiguratorPro\Services\DesignStepService;
+use KitchenConfiguratorPro\Services\ShopHeroService;
 
 /**
  * Plugin settings page.
@@ -43,6 +45,8 @@ final class SettingsPage {
 				'vat_rate'            => 0,
 				'quote_validity_days' => 30,
 				'design_check_price'  => 75,
+				'shop_hero'           => ShopHeroService::defaults(),
+				'design_step'         => DesignStepService::defaults(),
 			)
 		);
 
@@ -60,6 +64,8 @@ final class SettingsPage {
 						'vat_rate'            => max( 0, (float) ( $_POST['vat_rate'] ?? 0 ) ),
 						'quote_validity_days' => max( 1, (int) ( $_POST['quote_validity_days'] ?? 30 ) ),
 						'design_check_price'  => max( 0, (float) ( $_POST['design_check_price'] ?? 75 ) ),
+						'shop_hero'           => ShopHeroService::sanitize_post( (array) wp_unslash( $_POST ) ),
+						'design_step'         => DesignStepService::sanitize_post( (array) wp_unslash( $_POST ) ),
 					)
 				);
 
@@ -71,6 +77,9 @@ final class SettingsPage {
 				);
 			}
 		}
+
+		$shop_hero   = ShopHeroService::get_settings();
+		$design_step = DesignStepService::get_settings();
 
 		$path = KCP_PLUGIN_DIR . 'templates/admin/settings.php';
 		include $path;
