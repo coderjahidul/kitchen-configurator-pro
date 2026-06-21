@@ -36,7 +36,12 @@ export class SelectionModal {
 			<article class="kcp-design-modal__card${ selected ? ' is-selected' : '' }">
 				<div class="kcp-design-modal__card-media">
 					${ rank > 0 ? `<span class="kcp-design-modal__rank">${ rank }</span>` : '' }
-					<div class="kcp-design-modal__card-image">${ image }</div>
+					<button
+						type="button"
+						class="kcp-design-modal__card-image"
+						data-option-id="${ Number( option.id ) }"
+						aria-label="${ escapeHtml( copy.selectLabel ) } — ${ escapeHtml( option.name || '' ) }"
+					>${ image }</button>
 				</div>
 				<h3 class="kcp-design-modal__card-name">${ escapeHtml( option.name || '' ) }</h3>
 				<div class="kcp-design-modal__price-class">

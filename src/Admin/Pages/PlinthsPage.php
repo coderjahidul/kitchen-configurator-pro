@@ -74,7 +74,7 @@ final class PlinthsPage extends AbstractCrudPage {
 			'length_step'            => array( 'type' => 'number', 'label' => __( 'Length Step (mm)', 'kitchen-configurator-pro' ), 'default' => 10, 'min' => 1 ),
 			'base_price'             => array( 'type' => 'number', 'label' => __( 'Base Price', 'kitchen-configurator-pro' ), 'step' => '0.01', 'default' => 0 ),
 			'price_per_linear_meter' => array( 'type' => 'number', 'label' => __( 'Price per Linear Meter', 'kitchen-configurator-pro' ), 'step' => '0.0001', 'default' => 0 ),
-			'thumbnail_url'          => array( 'type' => 'url', 'label' => __( 'Thumbnail URL', 'kitchen-configurator-pro' ) ),
+			'thumbnail_url'          => array( 'type' => 'image', 'label' => __( 'Thumbnail', 'kitchen-configurator-pro' ) ),
 			'sort_order'             => array( 'type' => 'number', 'label' => __( 'Sort Order', 'kitchen-configurator-pro' ), 'default' => 0, 'min' => 0 ),
 			'is_active'              => array( 'type' => 'checkbox', 'label' => __( 'Active', 'kitchen-configurator-pro' ), 'default' => 1 ),
 		);

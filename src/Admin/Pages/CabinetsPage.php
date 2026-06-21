@@ -148,15 +148,62 @@ final class CabinetsPage extends AbstractCrudPage {
 			'depth_step'           => array( 'type' => 'number', 'label' => __( 'Depth Step (mm)', 'kitchen-configurator-pro' ), 'default' => 10, 'min' => 1 ),
 			'base_price'           => array( 'type' => 'number', 'label' => __( 'Base Price', 'kitchen-configurator-pro' ), 'required' => true, 'step' => '0.01', 'min' => 0 ),
 			'dimension_price_json' => array(
-				'type'        => 'json',
-				'label'       => __( 'Dimension Pricing (JSON)', 'kitchen-configurator-pro' ),
-				'description' => __( 'Optional per-mm surcharge rules.', 'kitchen-configurator-pro' ),
-				'rows'        => 6,
+				'type'        => 'dimension_pricing',
+				'label'       => __( 'Dimension Pricing', 'kitchen-configurator-pro' ),
+				'description' => __( 'Optional per-mm surcharge above the base dimension. Leave base empty to use the cabinet default.', 'kitchen-configurator-pro' ),
 			),
-			'image_url'            => array( 'type' => 'url', 'label' => __( 'Image URL', 'kitchen-configurator-pro' ) ),
+			'image_url'            => array( 'type' => 'image', 'label' => __( 'Image', 'kitchen-configurator-pro' ) ),
 			'sort_order'           => array( 'type' => 'number', 'label' => __( 'Sort Order', 'kitchen-configurator-pro' ), 'default' => 0, 'min' => 0 ),
 			'is_active'            => array( 'type' => 'checkbox', 'label' => __( 'Active', 'kitchen-configurator-pro' ), 'default' => 1 ),
 		);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	protected function collect_post_data(): array {
+		$data = parent::collect_post_data();
+
+		$pricing = isset( $_POST['dimension_pricing'] ) && is_array( $_POST['dimension_pricing'] )
+			? wp_unslash( $_POST['dimension_pricing'] )
+			: array();
+
+		$rules = array();
+
+		foreach ( array( 'width', 'height', 'depth' ) as $axis ) {
+			if ( ! isset( $pricing[ $axis ] ) || ! is_array( $pricing[ $axis ] ) ) {
+				continue;
+			}
+
+			$rate = is_numeric( $pricing[ $axis ]['rate_per_mm'] ?? null )
+				? (float) $pricing[ $axis ]['rate_per_mm']
+				: 0.0;
+			$base = is_numeric( $pricing[ $axis ]['base'] ?? null )
+				? (int) $pricing[ $axis ]['base']
+				: 0;
+
+			if ( $rate <= 0 && $base <= 0 ) {
+				continue;
+			}
+
+			$rule = array();
+
+			if ( $rate > 0 ) {
+				$rule['rate_per_mm'] = $rate;
+			}
+
+			if ( $base > 0 ) {
+				$rule['base'] = $base;
+			}
+
+			if ( ! empty( $rule ) ) {
+				$rules[ $axis ] = $rule;
+			}
+		}
+
+		$data['dimension_price_json'] = wp_json_encode( $rules, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) ?: '{}';
+
+		return $data;
 	}
 
 	/**

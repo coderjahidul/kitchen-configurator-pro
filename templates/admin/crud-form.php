@@ -102,6 +102,8 @@ defined( 'ABSPATH' ) || exit;
 								$modifier = (string) ( $field['modifier'] ?? '' );
 								require KCP_PLUGIN_DIR . 'templates/admin/partials/image-picker-field.php';
 								?>
+							<?php elseif ( 'dimension_pricing' === $type ) : ?>
+								<?php require KCP_PLUGIN_DIR . 'templates/admin/partials/dimension-pricing-field.php'; ?>
 							<?php else : ?>
 								<input
 									type="<?php echo esc_attr( $type ); ?>"

@@ -31,24 +31,72 @@ export class DesignStep {
 		}
 	}
 
-	renderLegendSwatch( selection ) {
-		if ( ! selection ) {
-			return '<span class="kcp-design__legend-swatch kcp-design__legend-swatch--empty"></span>';
-		}
-
-		if ( selection.image_url ) {
-			return `<span class="kcp-design__legend-swatch"><img src="${ escapeHtml( selection.image_url ) }" alt="" /></span>`;
-		}
-
-		return `<span class="kcp-design__legend-swatch" style="background:${ escapeHtml( selection.hex || '#ffffff' ) }"></span>`;
-	}
-
 	renderNavLink( url, label ) {
 		if ( ! url ) {
 			return '';
 		}
 
 		return `<a class="kcp-design__link" href="${ escapeHtml( url ) }">${ escapeHtml( label || '' ) }</a>`;
+	}
+
+	renderLegendCheckbox( selection ) {
+		return `
+			<span class="kcp-design__legend-check${ selection ? ' is-checked' : '' }" aria-hidden="true">
+				<span class="kcp-design__legend-checkmark">&#10003;</span>
+			</span>
+		`;
+	}
+
+	getPreviewPlacement( zone ) {
+		const top = Number( zone.top );
+		const left = Number( zone.left );
+
+		if ( top >= 75 ) {
+			return 'top';
+		}
+
+		if ( left >= 55 ) {
+			return 'right';
+		}
+
+		return 'left';
+	}
+
+	renderSelectionPreview( selection, placement ) {
+		if ( ! selection ) {
+			return '';
+		}
+
+		const media = selection.image_url
+			? `<img src="${ escapeHtml( selection.image_url ) }" alt="" loading="lazy" decoding="async" />`
+			: `<span class="kcp-design__hotspot-preview-color" style="background:${ escapeHtml( selection.hex || '#ffffff' ) }"></span>`;
+
+		return `
+			<span class="kcp-design__hotspot-preview kcp-design__hotspot-preview--${ escapeHtml( placement ) }">
+				<span class="kcp-design__hotspot-preview-media">${ media }</span>
+			</span>
+			<span class="kcp-design__hotspot-line kcp-design__hotspot-line--${ escapeHtml( placement ) }" aria-hidden="true"></span>
+		`;
+	}
+
+	renderHotspot( zone, selection, activeZoneId ) {
+		const isSelected = Boolean( selection );
+		const isActive = activeZoneId === zone.id;
+		const placement = this.getPreviewPlacement( zone );
+		const icon = isSelected ? '&#10003;' : '&#9998;';
+
+		return `
+			<button
+				type="button"
+				class="kcp-design__hotspot${ isActive ? ' is-active' : '' }${ isSelected ? ' is-selected' : '' }"
+				data-zone-id="${ escapeHtml( zone.id ) }"
+				style="top:${ Number( zone.top ) }%;left:${ Number( zone.left ) }%;"
+				aria-label="${ escapeHtml( zone.label ) }"
+			>
+				${ isSelected ? this.renderSelectionPreview( selection, placement ) : '' }
+				<span class="kcp-design__hotspot-icon" aria-hidden="true">${ icon }</span>
+			</button>
+		`;
 	}
 
 	render( state ) {
@@ -73,8 +121,8 @@ export class DesignStep {
 							const selection = state.selections[ zone.id ] || null;
 
 							return `
-								<button type="button" class="kcp-design__legend-item" data-zone-id="${ escapeHtml( zone.id ) }">
-									${ this.renderLegendSwatch( selection ) }
+								<button type="button" class="kcp-design__legend-item${ selection ? ' is-selected' : '' }" data-zone-id="${ escapeHtml( zone.id ) }">
+									${ this.renderLegendCheckbox( selection ) }
 									<span class="kcp-design__legend-label">${ escapeHtml( zone.label ) }</span>
 								</button>
 							`;
@@ -89,17 +137,11 @@ export class DesignStep {
 								? `<img class="kcp-design__image" src="${ escapeHtml( imageUrl ) }" alt="" loading="lazy" decoding="async" />`
 								: '<div class="kcp-design__image kcp-design__image--placeholder"></div>' }
 							<div class="kcp-design__hotspots">
-								${ zones.map( ( zone ) => `
-									<button
-										type="button"
-										class="kcp-design__hotspot${ state.activeZoneId === zone.id ? ' is-active' : '' }"
-										data-zone-id="${ escapeHtml( zone.id ) }"
-										style="top:${ Number( zone.top ) }%;left:${ Number( zone.left ) }%;"
-										aria-label="${ escapeHtml( zone.label ) }"
-									>
-										<span class="kcp-design__hotspot-icon" aria-hidden="true">&#9998;</span>
-									</button>
-								` ).join( '' ) }
+								${ zones.map( ( zone ) => this.renderHotspot(
+									zone,
+									state.selections[ zone.id ] || null,
+									state.activeZoneId
+								) ).join( '' ) }
 							</div>
 						</div>
 						${ ( config.back_url || config.skip_url )

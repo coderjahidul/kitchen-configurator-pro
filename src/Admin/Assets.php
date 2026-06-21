@@ -49,7 +49,7 @@ final class Assets {
 			true
 		);
 
-		if ( in_array( $hook_suffix, array( 'kitchen-configurator_page_kcp-products', 'kitchen-configurator_page_kcp-settings', 'kitchen-configurator_page_kcp-handles', 'kitchen-configurator_page_kcp-colors' ), true ) ) {
+		if ( in_array( $hook_suffix, array( 'kitchen-configurator_page_kcp-products', 'kitchen-configurator_page_kcp-settings', 'kitchen-configurator_page_kcp-handles', 'kitchen-configurator_page_kcp-colors', 'kitchen-configurator_page_kcp-cabinets', 'kitchen-configurator_page_kcp-plinths' ), true ) ) {
 			wp_enqueue_media();
 
 			$media_script = KCP_PLUGIN_DIR . 'assets/admin/js/product-preset-media.js';
@@ -113,6 +113,7 @@ final class Assets {
 			'kitchen-configurator_page_kcp-materials',
 			'kitchen-configurator_page_kcp-colors',
 			'kitchen-configurator_page_kcp-handles',
+			'kitchen-configurator_page_kcp-plinths',
 			'kitchen-configurator_page_kcp-accessories',
 			'kitchen-configurator_page_kcp-pricing-rules',
 			'kitchen-configurator_page_kcp-configurations',
