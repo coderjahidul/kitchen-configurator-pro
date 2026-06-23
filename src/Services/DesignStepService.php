@@ -61,8 +61,10 @@ final class DesignStepService {
 			'base_image_url' => '',
 			'back_url'       => '',
 			'back_label'     => __( 'terug naar kast type', 'kitchen-configurator-pro' ),
-			'skip_url'       => '',
-			'skip_label'     => __( 'deze stap overslaan', 'kitchen-configurator-pro' ),
+			'skip_url'             => '',
+			'skip_label'           => __( 'deze stap overslaan', 'kitchen-configurator-pro' ),
+			'cabinet_select_url'   => '',
+			'cabinet_select_label' => __( 'selecteer kasten', 'kitchen-configurator-pro' ),
 			'monsterbox_url'   => '',
 			'monsterbox_promo' => __( 'Wil jij eerst de kleur thuis goed bekijken?', 'kitchen-configurator-pro' ),
 			'monsterbox_label' => __( 'bestel onze monsterbox', 'kitchen-configurator-pro' ),
@@ -96,19 +98,59 @@ final class DesignStepService {
 			$zones   = $catalog->hydrate_zones( $zones );
 		}
 
+		$base_image = esc_url_raw( (string) ( $config['base_image_url'] ?? '' ) );
+		if ( '' === $base_image ) {
+			$base_image = KCP_PLUGIN_URL . 'assets/frontend/images/design/kitchen-cabinet-handle.png';
+		}
+
+		$cabinet_select_url = (string) ( $config['cabinet_select_url'] ?? '' );
+		if ( '' === $cabinet_select_url ) {
+			$cabinet_select_url = self::resolve_cabinet_select_page_url();
+		}
+		$cabinet_select_url = self::normalize_step_url( $cabinet_select_url );
+
+		$skip_url = (string) ( $config['skip_url'] ?? '' );
+		if ( '' === $skip_url ) {
+			$skip_url = $cabinet_select_url;
+		}
+		$skip_url = self::normalize_step_url( $skip_url );
+
+		$back_url = (string) ( $config['back_url'] ?? '' );
+		if ( '' === $back_url ) {
+			$back_url = self::resolve_back_page_url();
+		}
+
 		return array(
 			'breadcrumb'     => (string) ( $config['breadcrumb'] ?? '' ),
 			'heading'        => (string) ( $config['heading'] ?? '' ),
 			'description'    => (string) ( $config['description'] ?? '' ),
-			'base_image_url' => (string) ( $config['base_image_url'] ?? '' ),
-			'back_url'       => (string) ( $config['back_url'] ?? '' ),
+			'base_image_url' => $base_image,
+			'back_url'       => $back_url,
 			'back_label'     => (string) ( $config['back_label'] ?? '' ),
-			'skip_url'         => (string) ( $config['skip_url'] ?? '' ),
-			'skip_label'       => (string) ( $config['skip_label'] ?? '' ),
-			'monsterbox_url'   => (string) ( $config['monsterbox_url'] ?? '' ),
+			'skip_url'             => $skip_url,
+			'skip_label'           => (string) ( $config['skip_label'] ?? self::defaults()['skip_label'] ),
+			'cabinet_select_url'   => $cabinet_select_url,
+			'cabinet_select_label' => (string) ( $config['cabinet_select_label'] ?? self::defaults()['cabinet_select_label'] ),
+			'monsterbox_url'       => (string) ( $config['monsterbox_url'] ?? '' ),
 			'monsterbox_promo' => (string) ( $config['monsterbox_promo'] ?? '' ),
 			'monsterbox_label' => (string) ( $config['monsterbox_label'] ?? '' ),
 			'zones'            => $zones,
+			'preview_masks'    => self::preview_masks(),
+		);
+	}
+
+	/**
+	 * Mask image URLs for the handle cabinet preview overlays.
+	 *
+	 * @return array<string, string>
+	 */
+	private static function preview_masks(): array {
+		$base = KCP_PLUGIN_URL . 'assets/frontend/images/design/masks/handle/';
+
+		return array(
+			'front'   => $base . 'kitchen-cabinet-handle-front.png',
+			'cabinet' => $base . 'kitchen-cabinet-handle-cabinet.png',
+			'plinth'  => $base . 'kitchen-cabinet-handle-skirt.png',
 		);
 	}
 
@@ -151,8 +193,10 @@ final class DesignStepService {
 				'base_image_url' => esc_url_raw( wp_unslash( (string) ( $post['design_step_base_image_url'] ?? '' ) ) ),
 				'back_url'       => esc_url_raw( wp_unslash( (string) ( $post['design_step_back_url'] ?? '' ) ) ),
 				'back_label'     => sanitize_text_field( wp_unslash( (string) ( $post['design_step_back_label'] ?? '' ) ) ),
-				'skip_url'         => esc_url_raw( wp_unslash( (string) ( $post['design_step_skip_url'] ?? '' ) ) ),
-				'skip_label'       => sanitize_text_field( wp_unslash( (string) ( $post['design_step_skip_label'] ?? '' ) ) ),
+				'skip_url'               => esc_url_raw( wp_unslash( (string) ( $post['design_step_skip_url'] ?? '' ) ) ),
+				'skip_label'             => sanitize_text_field( wp_unslash( (string) ( $post['design_step_skip_label'] ?? '' ) ) ),
+				'cabinet_select_url'     => esc_url_raw( wp_unslash( (string) ( $post['design_step_cabinet_select_url'] ?? '' ) ) ),
+				'cabinet_select_label'   => sanitize_text_field( wp_unslash( (string) ( $post['design_step_cabinet_select_label'] ?? '' ) ) ),
 				'monsterbox_url'   => esc_url_raw( wp_unslash( (string) ( $post['design_step_monsterbox_url'] ?? '' ) ) ),
 				'monsterbox_promo' => sanitize_text_field( wp_unslash( (string) ( $post['design_step_monsterbox_promo'] ?? '' ) ) ),
 				'monsterbox_label' => sanitize_text_field( wp_unslash( (string) ( $post['design_step_monsterbox_label'] ?? '' ) ) ),
@@ -172,6 +216,9 @@ final class DesignStepService {
 		$zones    = self::normalize_zones( is_array( $design['zones'] ?? null ) ? $design['zones'] : array() );
 
 		$base_image = esc_url_raw( (string) ( $design['base_image_url'] ?? '' ) );
+		if ( '' === $base_image ) {
+			$base_image = KCP_PLUGIN_URL . 'assets/frontend/images/design/kitchen-cabinet-handle.png';
+		}
 
 		return array(
 			'breadcrumb'     => (string) ( $design['breadcrumb'] ?? $defaults['breadcrumb'] ),
@@ -180,8 +227,10 @@ final class DesignStepService {
 			'base_image_url' => $base_image,
 			'back_url'       => (string) ( $design['back_url'] ?? '' ),
 			'back_label'     => (string) ( $design['back_label'] ?? $defaults['back_label'] ),
-			'skip_url'         => (string) ( $design['skip_url'] ?? '' ),
-			'skip_label'       => (string) ( $design['skip_label'] ?? $defaults['skip_label'] ),
+			'skip_url'             => (string) ( $design['skip_url'] ?? '' ),
+			'skip_label'           => (string) ( $design['skip_label'] ?? $defaults['skip_label'] ),
+			'cabinet_select_url'   => (string) ( $design['cabinet_select_url'] ?? '' ),
+			'cabinet_select_label' => (string) ( $design['cabinet_select_label'] ?? $defaults['cabinet_select_label'] ),
 			'monsterbox_url'   => esc_url_raw( (string) ( $design['monsterbox_url'] ?? '' ) ),
 			'monsterbox_promo' => (string) ( $design['monsterbox_promo'] ?? $defaults['monsterbox_promo'] ),
 			'monsterbox_label' => (string) ( $design['monsterbox_label'] ?? $defaults['monsterbox_label'] ),
@@ -300,5 +349,121 @@ final class DesignStepService {
 	 */
 	private static function clamp_percent( mixed $value ): float {
 		return max( 0.0, min( 100.0, (float) $value ) );
+	}
+
+	/**
+	 * Avoid linking cabinet-select steps back to the design page itself.
+	 *
+	 * @param string $url Candidate URL.
+	 */
+	private static function normalize_step_url( string $url ): string {
+		$url = esc_url_raw( $url );
+		if ( '' === $url ) {
+			return '';
+		}
+
+		$design_page_id = self::resolve_design_page_id();
+		if ( $design_page_id <= 0 ) {
+			return $url;
+		}
+
+		$design_url = get_permalink( $design_page_id );
+		if ( ! is_string( $design_url ) || '' === $design_url ) {
+			return $url;
+		}
+
+		if ( untrailingslashit( $url ) === untrailingslashit( $design_url ) ) {
+			$resolved = self::resolve_cabinet_select_page_url();
+			return '' !== $resolved ? $resolved : $url;
+		}
+
+		return $url;
+	}
+
+	/**
+	 * Published page ID that renders the design step shortcode.
+	 */
+	private static function resolve_design_page_id(): int {
+		$cached = get_transient( 'kcp_design_page_id' );
+		if ( is_numeric( $cached ) && (int) $cached > 0 ) {
+			return (int) $cached;
+		}
+
+		$posts = get_posts(
+			array(
+				'post_type'      => 'page',
+				'post_status'    => 'publish',
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'orderby'        => 'ID',
+				'order'          => 'ASC',
+			)
+		);
+
+		foreach ( $posts as $post_id ) {
+			$post = get_post( (int) $post_id );
+			if ( ! $post instanceof \WP_Post || ! has_shortcode( $post->post_content, 'kcp_design_step' ) ) {
+				continue;
+			}
+
+			set_transient( 'kcp_design_page_id', (int) $post_id, DAY_IN_SECONDS );
+			return (int) $post_id;
+		}
+
+		return 0;
+	}
+
+	/**
+	 * Resolve the cabinet select step page permalink.
+	 */
+	private static function resolve_cabinet_select_page_url(): string {
+		$cached = get_transient( 'kcp_cabinet_select_page_url' );
+		if ( is_string( $cached ) && '' !== $cached ) {
+			return $cached;
+		}
+
+		$posts = get_posts(
+			array(
+				'post_type'      => 'page',
+				'post_status'    => 'publish',
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'orderby'        => 'ID',
+				'order'          => 'ASC',
+			)
+		);
+
+		foreach ( $posts as $post_id ) {
+			$post = get_post( (int) $post_id );
+			if ( ! $post instanceof \WP_Post || ! has_shortcode( $post->post_content, 'kcp_cabinet_select' ) ) {
+				continue;
+			}
+
+			$url = get_permalink( $post );
+			if ( is_string( $url ) && '' !== $url ) {
+				set_transient( 'kcp_cabinet_select_page_url', $url, DAY_IN_SECONDS );
+				return $url;
+			}
+		}
+
+		$design = self::get_settings();
+		$skip   = (string) ( $design['skip_url'] ?? '' );
+
+		return $skip;
+	}
+
+	/**
+	 * Resolve the landing page users return to for cabinet type selection.
+	 */
+	private static function resolve_back_page_url(): string {
+		$cached = get_transient( 'kcp_design_back_page_url' );
+		if ( is_string( $cached ) && '' !== $cached ) {
+			return $cached;
+		}
+
+		$url = home_url( '/' );
+		set_transient( 'kcp_design_back_page_url', $url, DAY_IN_SECONDS );
+
+		return $url;
 	}
 }

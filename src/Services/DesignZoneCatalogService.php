@@ -107,10 +107,24 @@ final class DesignZoneCatalogService {
 		return match ( $source ) {
 			'colors'   => array_map( array( $this, 'map_color' ), $this->colors->find_all( $active ) ),
 			'handles'  => array_map( array( $this, 'map_handle' ), $this->handles->find_all( $active ) ),
-			'cabinets' => array_map( array( $this, 'map_cabinet' ), $this->cabinets->find_all( $active ) ),
+			'cabinets' => array_values( array_filter(
+				array_map( array( $this, 'map_cabinet' ), $this->cabinets->find_all( $active ) ),
+				array( $this, 'is_cabinet_finish_option' )
+			) ),
 			'plinths'  => array_map( array( $this, 'map_plinth' ), $this->plinths->find_all( $active ) ),
 			default    => array(),
 		};
+	}
+
+	/**
+	 * Cabinet zone options should be carcass finishes, not dimensioned products.
+	 *
+	 * @param array<string, mixed> $option Mapped catalog option.
+	 */
+	private function is_cabinet_finish_option( array $option ): bool {
+		$name = strtolower( (string) ( $option['name'] ?? '' ) );
+
+		return ! preg_match( '/\b\d+\s*cm\b/', $name );
 	}
 
 	/**

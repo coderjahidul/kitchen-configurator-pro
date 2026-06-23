@@ -314,6 +314,17 @@ $design_step = is_array( $design_step ?? null ) ? $design_step : array();
 				<th scope="row"><label for="kcp-design-step-skip-label"><?php esc_html_e( 'Skip label', 'kitchen-configurator-pro' ); ?></label></th>
 				<td><input type="text" name="design_step_skip_label" id="kcp-design-step-skip-label" class="regular-text" value="<?php echo esc_attr( (string) ( $design_step['skip_label'] ?? '' ) ); ?>" /></td>
 			</tr>
+			<tr>
+				<th scope="row"><label for="kcp-design-step-cabinet-select-url"><?php esc_html_e( 'Select cabinets URL', 'kitchen-configurator-pro' ); ?></label></th>
+				<td>
+					<input type="url" name="design_step_cabinet_select_url" id="kcp-design-step-cabinet-select-url" class="large-text" value="<?php echo esc_attr( (string) ( $design_step['cabinet_select_url'] ?? '' ) ); ?>" />
+					<p class="description"><?php esc_html_e( 'Page with [kcp_cabinet_select] shortcode. Powers the bottom "selecteer kasten" button.', 'kitchen-configurator-pro' ); ?></p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="kcp-design-step-cabinet-select-label"><?php esc_html_e( 'Select cabinets label', 'kitchen-configurator-pro' ); ?></label></th>
+				<td><input type="text" name="design_step_cabinet_select_label" id="kcp-design-step-cabinet-select-label" class="regular-text" value="<?php echo esc_attr( (string) ( $design_step['cabinet_select_label'] ?? '' ) ); ?>" /></td>
+			</tr>
 		</table>
 
 		<?php
@@ -322,6 +333,47 @@ $design_step = is_array( $design_step ?? null ) ? $design_step : array();
 			require KCP_PLUGIN_DIR . 'templates/admin/partials/design-zone-row.php';
 		endforeach;
 		?>
+
+		<h2><?php esc_html_e( 'Select cabinets step', 'kitchen-configurator-pro' ); ?></h2>
+		<p class="description">
+			<?php
+			printf(
+				/* translators: %s: shortcode */
+				esc_html__( 'Configure the "selecteer kasten" page. Add %s to any page.', 'kitchen-configurator-pro' ),
+				'<code>[kcp_cabinet_select]</code>'
+			);
+			?>
+		</p>
+		<table class="form-table" role="presentation">
+			<tr>
+				<th scope="row"><label for="kcp-cabinet-select-heading"><?php esc_html_e( 'Heading', 'kitchen-configurator-pro' ); ?></label></th>
+				<td><input type="text" name="cabinet_select_heading" id="kcp-cabinet-select-heading" class="large-text" value="<?php echo esc_attr( (string) ( $cabinet_select_step['heading'] ?? '' ) ); ?>" /></td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="kcp-cabinet-select-description"><?php esc_html_e( 'Description', 'kitchen-configurator-pro' ); ?></label></th>
+				<td><textarea name="cabinet_select_description" id="kcp-cabinet-select-description" class="large-text" rows="2"><?php echo esc_textarea( (string) ( $cabinet_select_step['description'] ?? '' ) ); ?></textarea></td>
+			</tr>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Preview image', 'kitchen-configurator-pro' ); ?></th>
+				<td>
+					<?php
+					$name = 'cabinet_select_preview_image_url';
+					$value = (string) ( $cabinet_select_step['preview_image_url'] ?? '' );
+					$id = 'kcp-cabinet-select-preview-image';
+					$modifier = 'large';
+					require KCP_PLUGIN_DIR . 'templates/admin/partials/image-picker-field.php';
+					?>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="kcp-cabinet-select-back-url"><?php esc_html_e( 'Back to design URL', 'kitchen-configurator-pro' ); ?></label></th>
+				<td><input type="url" name="cabinet_select_back_url" id="kcp-cabinet-select-back-url" class="large-text" value="<?php echo esc_attr( (string) ( $cabinet_select_step['back_url'] ?? '' ) ); ?>" /></td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="kcp-cabinet-select-design-edit-url"><?php esc_html_e( 'Edit design URL (wijzigen)', 'kitchen-configurator-pro' ); ?></label></th>
+				<td><input type="url" name="cabinet_select_design_edit_url" id="kcp-cabinet-select-design-edit-url" class="large-text" value="<?php echo esc_attr( (string) ( $cabinet_select_step['design_edit_url'] ?? '' ) ); ?>" /></td>
+			</tr>
+		</table>
 
 		<p class="submit">
 			<button type="submit" class="button button-primary">

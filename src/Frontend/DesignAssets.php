@@ -51,18 +51,23 @@ final class DesignAssets {
 			return;
 		}
 
+		$css_path = KCP_PLUGIN_DIR . 'assets/frontend/css/design.css';
+		$js_path  = KCP_PLUGIN_DIR . 'assets/frontend/js/design/main.js';
+		$css_ver  = file_exists( $css_path ) ? (string) filemtime( $css_path ) : KCP_VERSION;
+		$js_ver   = file_exists( $js_path ) ? (string) filemtime( $js_path ) : KCP_VERSION;
+
 		wp_enqueue_style(
 			'kcp-design',
 			KCP_PLUGIN_URL . 'assets/frontend/css/design.css',
 			array(),
-			KCP_VERSION
+			$css_ver
 		);
 
 		wp_enqueue_script(
 			'kcp-design',
 			KCP_PLUGIN_URL . 'assets/frontend/js/design/main.js',
 			array(),
-			KCP_VERSION,
+			$js_ver,
 			true
 		);
 

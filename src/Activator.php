@@ -12,6 +12,7 @@ namespace KitchenConfiguratorPro;
 use KitchenConfiguratorPro\Database\Migrator;
 use KitchenConfiguratorPro\Integration\WooCommerce\ProductManager;
 use KitchenConfiguratorPro\Security\CapabilityManager;
+use KitchenConfiguratorPro\Services\CabinetSelectStepService;
 use KitchenConfiguratorPro\Services\DesignStepService;
 use KitchenConfiguratorPro\Services\ShopHeroService;
 
@@ -92,6 +93,7 @@ final class Activator {
 					'design_check_price'  => 75,
 					'shop_hero'           => ShopHeroService::defaults(),
 					'design_step'         => DesignStepService::defaults(),
+					'cabinet_select_step' => CabinetSelectStepService::defaults(),
 				),
 				'',
 				false

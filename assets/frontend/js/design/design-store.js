@@ -2,11 +2,13 @@
  * Design step state helpers.
  */
 
+import { saveDesignSelections, saveDesignSelection, loadDesignSelections } from './design-selection-storage.js';
+
 export function createDesignStore( initialConfig ) {
 	const listeners = new Set();
 	const state = {
 		config: initialConfig,
-		selections: {},
+		selections: loadDesignSelections(),
 		activeZoneId: null,
 		modalOpen: false,
 	};
@@ -37,6 +39,8 @@ export function createDesignStore( initialConfig ) {
 			state.selections[ zoneId ] = color;
 			state.activeZoneId = null;
 			state.modalOpen = false;
+			saveDesignSelection( zoneId, color );
+			saveDesignSelections( state.selections );
 			emit();
 		},
 		getZone( zoneId ) {

@@ -62,11 +62,40 @@ body.kcp-design-active .entry-content > .wp-block-paragraph:empty {
 	padding: 24px clamp( 16px, 4vw, 48px ) 48px;
 }
 
+/* ── Breadcrumb ──────────────────────────────────────────────────── */
+
+.kcp-design__breadcrumbs {
+	margin-bottom: 18px;
+	text-align: left;
+}
+
+.kcp-design__breadcrumb-list {
+	display: inline-block;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	font-size: 12px;
+	text-transform: lowercase;
+}
+
+.kcp-design__breadcrumb-list li {
+	display: inline-block;
+	vertical-align: middle;
+	position: relative;
+	padding: 0;
+}
+
+.kcp-design__breadcrumb-list span {
+	display: inline-block;
+	color: var( --kcp-design-text );
+	font-weight: 500;
+}
+
 /* ── Intro ───────────────────────────────────────────────────────── */
 
 .kcp-design__intro {
 	max-width: 980px;
-	margin: 0 auto 0;
+	margin: 0 auto;
 	text-align: center;
 }
 
@@ -78,11 +107,17 @@ body.kcp-design-active .entry-content > .wp-block-paragraph:empty {
 
 .kcp-design__title {
 	margin: 0;
-	font-size: clamp( 2.25rem, 5vw, 3.75rem );
+	font-size: clamp( 2.5rem, 5vw, 3.75rem );
 	font-weight: 500;
 	line-height: 1.05;
 	text-transform: lowercase;
 	color: var( --kcp-design-text );
+}
+
+@media ( min-width: 992px ) {
+	.kcp-design__title {
+		font-size: 60px;
+	}
 }
 
 .kcp-design__link {
@@ -121,14 +156,30 @@ body.kcp-design-active .entry-content > .wp-block-paragraph:empty {
 	transform: translateY( -50% );
 }
 
+.kcp-design__link--muted {
+	color: var( --kcp-design-muted );
+}
+
+.kcp-design__link--muted::after {
+	border-bottom-color: var( --kcp-design-muted );
+}
+
 .kcp-design__description {
 	max-width: 650px;
-	margin: 0 auto 28px;
+	margin: 0 auto 0;
 	font-size: inherit;
 	font-weight: 400;
 	line-height: 1.35;
 	text-transform: lowercase;
 	color: var( --kcp-design-text );
+}
+
+/* ── Configurator content block ────────────────────────────────── */
+
+.kcp-design__content {
+	text-align: center;
+	padding-bottom: 60px;
+	overflow: visible;
 }
 
 /* ── Legend ──────────────────────────────────────────────────────── */
@@ -168,28 +219,7 @@ body.kcp-design-active .entry-content > .wp-block-paragraph:empty {
 	align-items: center;
 	justify-content: center;
 	vertical-align: middle;
-	width: 18px;
-	height: 18px;
-	border: 2px solid #000;
-	border-radius: 2px;
-	background: #fff;
-}
-
-.kcp-design__legend-checkmark {
-	display: none;
-	color: #000;
-	font-size: 14px;
-	font-weight: 700;
-	line-height: 1;
-}
-
-.kcp-design__legend-check.is-checked .kcp-design__legend-checkmark {
-	display: block;
-}
-
-.kcp-design__legend-swatch {
-	display: inline-block;
-	vertical-align: middle;
+	position: relative;
 	width: 30px;
 	height: 30px;
 	border: 2px solid #000;
@@ -198,14 +228,40 @@ body.kcp-design-active .entry-content > .wp-block-paragraph:empty {
 	overflow: hidden;
 }
 
-.kcp-design__legend-swatch--empty {
-	background: #fff;
+.kcp-design__legend-check.is-checked {
+	background: transparent;
 }
 
-.kcp-design__legend-swatch img {
+.kcp-design__legend-swatch {
+	display: block;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+}
+
+.kcp-design__legend-swatch img,
+.kcp-design__legend-swatch-color {
+	display: block;
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
+}
+
+.kcp-design__legend-checkmark {
+	display: none;
+	position: absolute;
+	z-index: 2;
+	top: 50%;
+	left: 50%;
+	color: #000;
+	font-size: 14px;
+	font-weight: 700;
+	line-height: 1;
+	transform: translate( -50%, -50% );
+	text-shadow: 0 0 3px #fff, 0 0 3px #fff;
+}
+
+.kcp-design__legend-check.is-checked .kcp-design__legend-checkmark {
 	display: block;
 }
 
@@ -219,46 +275,273 @@ body.kcp-design-active .entry-content > .wp-block-paragraph:empty {
 
 /* ── Cabinet stage ───────────────────────────────────────────────── */
 
-.kcp-design__stage {
-	display: flex;
-	justify-content: center;
-	margin: 0 auto;
-}
-
 .kcp-design__cabinet {
+	position: relative;
 	width: min( 100%, 980px );
+	min-height: 555px;
 	margin: 0 auto;
+	overflow: visible;
 }
 
 .kcp-design__visual {
 	position: relative;
+	min-height: 555px;
 	width: 100%;
 	line-height: 0;
 	overflow: visible;
+	padding-bottom: 72px;
 }
 
 .kcp-design__image {
-	width: 100%;
-	height: auto;
 	display: block;
+	position: relative;
+	left: 50%;
+	width: auto !important;
+	max-width: 100% !important;
+	height: auto;
+	transform: translateX( -50% );
 	object-fit: contain;
 	object-position: center center;
 }
 
+@media ( min-width: 1240px ) {
+	.kcp-design__image {
+		max-width: none !important;
+	}
+}
+
 .kcp-design__image--placeholder {
 	min-height: clamp( 320px, 50vw, 520px );
+	width: 100% !important;
+	max-width: 100% !important;
+	transform: none;
+	left: 0;
 	background: linear-gradient( 180deg, rgba( 255, 255, 255, 0.35 ), rgba( 0, 0, 0, 0.03 ) );
+}
+
+/* ── Cabinet colour overlays ─────────────────────────────────────── */
+
+.kcp-design__preview-stage {
+	position: absolute;
+	top: 0;
+	left: 50%;
+	z-index: 2;
+	width: 349px;
+	height: 390px;
+	transform: translateX( -50% );
+	transform-origin: top center;
+	overflow: visible;
+	pointer-events: none;
+}
+
+.kcp-design__preview-defs {
+	position: absolute;
+	width: 0;
+	height: 0;
+	overflow: hidden;
+	pointer-events: none;
+}
+
+.kcp-design__overlays {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	pointer-events: none;
+	overflow: visible;
+	transition: opacity 0.35s ease;
+}
+
+.kcp-design__overlays.is-updating {
+	opacity: 0.2;
+}
+
+.kcp-design__overlay {
+	position: absolute;
+	overflow: hidden;
+}
+
+/* Front door colour — mask + perspective skew (reference: selected-front3d.handle) */
+.kcp-design__overlay--front {
+	top: 0;
+	right: 105px;
+	width: 248px;
+	height: 355px;
+	z-index: 5;
+	opacity: 0.9;
+	mix-blend-mode: normal;
+	-webkit-mask-image: var( --kcp-design-mask );
+	mask-image: var( --kcp-design-mask );
+	-webkit-mask-repeat: no-repeat;
+	mask-repeat: no-repeat;
+	-webkit-mask-position: left center;
+	mask-position: left center;
+	-webkit-mask-size: contain;
+	mask-size: contain;
+	transition: opacity 0.4s ease;
+}
+
+.kcp-design__overlay--front::after {
+	content: "";
+	position: absolute;
+	z-index: 6;
+	top: 0;
+	right: 0;
+	bottom: -2px;
+	width: 7px;
+	opacity: 0.15;
+	border-left: 1px solid rgba( 255, 255, 255, 1 );
+	background: linear-gradient( to right, rgba( 0, 0, 0, 0.65 ) 0%, rgba( 0, 0, 0, 0 ) 100% );
+	pointer-events: none;
+}
+
+/* Cabinet body colour — SVG clip (reference: selected-cabinet-colour) */
+.kcp-design__overlay--cabinet {
+	top: 4px;
+	left: 9.5px;
+	width: 318px;
+	height: 335.5px;
+	z-index: 2;
+}
+
+/* Plinth colour — SVG clip (reference: selected-skirting-board-colour) */
+.kcp-design__overlay--plinth {
+	bottom: 2px;
+	left: 19px;
+	width: 308px;
+	height: 78px;
+	z-index: 2;
+}
+
+/* Handle preview bubble — top-left circle (reference: kitchen-cabinet-holder-handle .selected-handle) */
+.kcp-design__overlay--handle {
+	top: 20px;
+	left: -85px;
+	width: 112px;
+	height: 112px;
+	z-index: 6;
+	border: 3px solid var( --kcp-design-accent );
+	border-radius: 999px;
+	background: #fff;
+	mix-blend-mode: normal;
+	opacity: 1;
+	overflow: hidden;
+}
+
+.kcp-design__overlay-inner,
+.kcp-design__overlay-media {
+	position: relative;
+	width: 100%;
+	height: 100%;
+}
+
+.kcp-design__overlay--front .kcp-design__overlay-inner {
+	overflow: hidden;
+}
+
+.kcp-design__overlay-media-item--front-skew,
+.kcp-design__overlay-fill--front-skew {
+	transform: skewY( 4.5deg ) perspective( 1171px ) rotateY( -45deg );
+	width: 201px;
+	height: 333px;
+	margin-top: 5px;
+}
+
+.kcp-design__overlay-media-item--front-skew {
+	margin-left: -114.7px;
+	object-fit: cover;
+	max-width: none;
+	display: block;
+}
+
+.kcp-design__overlay-fill--front-skew {
+	margin-left: -33.7px;
+	transition: background-color 0.45s ease, opacity 0.45s ease;
+}
+
+.kcp-design__overlay-clip {
+	display: block;
+	width: 100%;
+	height: 100%;
+	-webkit-clip-path: var( --kcp-design-clip );
+	clip-path: var( --kcp-design-clip );
+	transition: opacity 0.45s ease;
+}
+
+.kcp-design__overlay--cabinet .kcp-design__overlay-media,
+.kcp-design__overlay--plinth .kcp-design__overlay-media {
+	position: relative;
+	width: 100%;
+	height: 100%;
+	opacity: 0.85;
+	overflow: hidden;
+	mix-blend-mode: multiply;
+}
+
+.kcp-design__overlay--cabinet .kcp-design__overlay-media::after,
+.kcp-design__overlay--plinth .kcp-design__overlay-media::after {
+	content: "";
+	position: absolute;
+	z-index: 6;
+	top: 25px;
+	right: 90px;
+	bottom: 1px;
+	width: 7px;
+	opacity: 0.15;
+	border-left: 1px solid rgba( 255, 255, 255, 1 );
+	background: linear-gradient( to right, rgba( 0, 0, 0, 0.65 ) 0%, rgba( 0, 0, 0, 0 ) 100% );
+	pointer-events: none;
+}
+
+.kcp-design__overlay--plinth .kcp-design__overlay-media::after {
+	top: 12px;
+	right: 70px;
+}
+
+.kcp-design__overlay--cabinet .kcp-design__overlay-media img,
+.kcp-design__overlay--plinth .kcp-design__overlay-media img,
+.kcp-design__overlay--cabinet .kcp-design__overlay-media .kcp-design__overlay-media-item,
+.kcp-design__overlay--plinth .kcp-design__overlay-media .kcp-design__overlay-media-item {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 100%;
+	height: 100%;
+	transform: translate( -50%, -50% );
+	object-fit: cover;
+	transition: opacity 0.45s ease;
+}
+
+.kcp-design__overlay--cabinet .kcp-design__overlay-media .kcp-design__overlay-fill,
+.kcp-design__overlay--plinth .kcp-design__overlay-media .kcp-design__overlay-fill {
+	width: 100%;
+	height: 100%;
+	transition: background-color 0.45s ease, opacity 0.45s ease;
+}
+
+.kcp-design__overlay--handle img {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	max-width: 100%;
+	max-height: 100%;
+	width: auto;
+	height: auto;
+	transform: translate( -50%, -50% );
+	object-fit: contain;
+	display: block;
 }
 
 .kcp-design__hotspots {
 	position: absolute;
 	inset: 0;
+	z-index: 4;
 	overflow: visible;
+	pointer-events: none;
 }
 
 .kcp-design__hotspot {
 	position: absolute;
-	z-index: 2;
+	z-index: 10;
 	display: block;
 	width: 45px;
 	height: 45px;
@@ -268,6 +551,37 @@ body.kcp-design-active .entry-content > .wp-block-paragraph:empty {
 	color: var( --kcp-design-accent );
 	transform: translate( -50%, -50% );
 	cursor: pointer;
+	pointer-events: auto;
+}
+
+.kcp-design__hotspot--handle-strip {
+	top: 55px;
+	left: 52px;
+	transform: none;
+}
+
+.kcp-design__hotspot--front {
+	top: 140px;
+	left: 52px;
+	transform: none;
+}
+
+.kcp-design__hotspot--cabinet {
+	top: 140px;
+	right: 52px;
+	left: auto;
+	transform: none;
+}
+
+.kcp-design__hotspot--plinth {
+	bottom: 0;
+	left: 47%;
+	top: auto;
+	transform: translateX( -50% );
+}
+
+.kcp-design__cabinet--handle .kcp-design__hotspot--plinth {
+	bottom: 6px;
 }
 
 .kcp-design__hotspot.is-selected {
@@ -331,6 +645,14 @@ body.kcp-design-active .entry-content > .wp-block-paragraph:empty {
 	top: 50%;
 	right: calc( 100% + 18px );
 	transform: translateY( -50% );
+}
+
+.kcp-design__hotspot--handle-strip .kcp-design__hotspot-preview--left {
+	top: 32%;
+}
+
+.kcp-design__hotspot--front .kcp-design__hotspot-preview--left {
+	top: 68%;
 }
 
 .kcp-design__hotspot-preview--right {
@@ -398,18 +720,56 @@ body.kcp-design-active .entry-content > .wp-block-paragraph:empty {
 	transform: translateX( -50% );
 }
 
-/* ── Footer nav (inside cabinet holder) ─────────────────────────── */
+/* ── Footer nav (overlaid on cabinet holder) ───────────────────── */
+
+.kcp-design__footer {
+	position: absolute;
+	top: 77%;
+	left: 50%;
+	z-index: 5;
+	display: block;
+	width: 100%;
+	max-width: 450px;
+	margin: 0;
+	padding: 0;
+	text-align: center;
+	transform: translateX( -50% );
+}
+
+.kcp-design__cta {
+	display: inline-block;
+	margin: 0 auto;
+	padding: 15px 25px;
+	border: 2px solid #000;
+	border-radius: 60px;
+	background: #fff;
+	color: #000;
+	font-size: 18px;
+	font-weight: 500;
+	line-height: 1.2;
+	text-decoration: none;
+	text-transform: lowercase;
+	white-space: nowrap;
+	transition: color 0.35s ease, background-color 0.35s ease, border-color 0.35s ease;
+}
+
+.kcp-design__cta:hover,
+.kcp-design__cta:focus-visible {
+	background: #000;
+	border-color: #000;
+	color: #fff;
+	text-decoration: none;
+}
 
 .kcp-design__nav {
 	display: block;
 	width: 100%;
-	max-width: 450px;
-	margin: 28px auto 0;
+	margin-top: 10px;
 	text-align: center;
 }
 
 .kcp-design__nav .kcp-design__link {
-	margin: 0 20px;
+	margin: 10px 20px 0;
 	font-size: 15px;
 }
 
@@ -720,6 +1080,17 @@ body.kcp-design-active .entry-content > .wp-block-paragraph:empty {
 		align-items: center;
 		padding: 0;
 	}
+
+	.kcp-design__cabinet,
+	.kcp-design__visual {
+		min-height: 0;
+	}
+
+	.kcp-design__footer {
+		position: static;
+		margin-top: 24px;
+		transform: none;
+	}
 }
 
 @media ( max-width: 640px ) {
@@ -734,6 +1105,13 @@ body.kcp-design-active .entry-content > .wp-block-paragraph:empty {
 
 	.kcp-design__cabinet {
 		min-height: 0;
+	}
+
+	.kcp-design__overlay--handle {
+		width: 85px;
+		height: 85px;
+		top: 27px;
+		left: -51px;
 	}
 
 	.kcp-design__hotspot {
