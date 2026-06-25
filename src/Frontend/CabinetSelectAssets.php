@@ -39,14 +39,21 @@ final class CabinetSelectAssets {
 			'kcp-cabinet-select',
 			KCP_PLUGIN_URL . 'assets/frontend/css/cabinet-select.css',
 			array(),
-			KCP_VERSION
+			(string) filemtime( KCP_PLUGIN_DIR . 'assets/frontend/css/cabinet-select.css' )
+		);
+
+		wp_enqueue_style(
+			'kcp-cabinet-select-overlays',
+			KCP_PLUGIN_URL . 'assets/frontend/css/cabinet-select-overlays.css',
+			array( 'kcp-cabinet-select' ),
+			(string) filemtime( KCP_PLUGIN_DIR . 'assets/frontend/css/cabinet-select-overlays.css' )
 		);
 
 		wp_enqueue_script(
 			'kcp-cabinet-select',
 			KCP_PLUGIN_URL . 'assets/frontend/js/cabinet-select/main.js',
 			array(),
-			KCP_VERSION,
+			(string) filemtime( KCP_PLUGIN_DIR . 'assets/frontend/js/cabinet-select/main.js' ),
 			true
 		);
 

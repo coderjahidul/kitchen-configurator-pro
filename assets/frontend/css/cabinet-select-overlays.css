@@ -1,0 +1,267 @@
+/**
+ * Cabinet select category overlays — matched to cabinet-group-selection-img-holder-handle.
+ */
+
+.kcp-cs-overlay-defs {
+	position: absolute;
+	width: 0;
+	height: 0;
+	overflow: hidden;
+	pointer-events: none;
+}
+
+.kcp-cabinet-select__visual-inner {
+	position: relative;
+	display: block;
+	overflow: hidden;
+}
+
+.kcp-cabinet-select__visual--pos-2 .kcp-cabinet-select__visual-inner,
+.kcp-cabinet-select__visual--pos-3 .kcp-cabinet-select__visual-inner,
+.kcp-cabinet-select__visual--pos-4 .kcp-cabinet-select__visual-inner {
+	overflow: visible;
+}
+
+.kcp-cs-overlays {
+	position: absolute;
+	inset: 0;
+	z-index: 2;
+	pointer-events: none;
+}
+
+.kcp-cs-overlay {
+	position: absolute;
+	overflow: hidden;
+}
+
+/* ── Clipped cabinet body + plinth ─────────────────────────────── */
+
+.kcp-cs-overlay__clip {
+	position: relative;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	opacity: 0.88;
+	mix-blend-mode: multiply;
+}
+
+.kcp-cs-overlay__clip .kcp-cs-overlay__media,
+.kcp-cs-overlay__clip .kcp-cs-overlay__fill {
+	position: absolute;
+	top: 0;
+	left: 0;
+	display: block;
+	-webkit-clip-path: var( --kcp-cs-clip );
+	clip-path: var( --kcp-cs-clip );
+	object-fit: cover;
+}
+
+/* ── Masked front doors ──────────────────────────────────────────── */
+
+.kcp-cs-overlay--front {
+	-webkit-mask-image: var( --kcp-cs-mask );
+	mask-image: var( --kcp-cs-mask );
+	-webkit-mask-repeat: no-repeat;
+	mask-repeat: no-repeat;
+	-webkit-mask-position: left top;
+	mask-position: left top;
+	-webkit-mask-size: contain;
+	mask-size: contain;
+	text-align: left;
+	overflow: hidden;
+	z-index: 4;
+}
+
+.kcp-cs-overlay--front .kcp-cs-overlay__media,
+.kcp-cs-overlay--front .kcp-cs-overlay__fill {
+	display: inline-block;
+	max-width: none;
+}
+
+.kcp-cs-overlay__media--skew-top,
+.kcp-cs-overlay__fill--skew-top {
+	transform: skewY( -14deg ) perspective( 1171px ) rotateY( -45deg );
+	width: 167px;
+	height: 353px;
+	margin-left: -30px;
+	margin-top: 22px;
+}
+
+.kcp-cs-overlay__media--skew-bottom,
+.kcp-cs-overlay__fill--skew-bottom {
+	transform: skewY( 4deg ) perspective( 1171px ) rotateY( -55deg );
+	width: 183px;
+	height: 240px;
+	margin-left: -44px;
+	margin-top: -1px;
+}
+
+.kcp-cs-overlay__media--skew-wall,
+.kcp-cs-overlay__fill--skew-wall {
+	transform: skewY( -16deg ) perspective( 1171px ) rotateY( -55deg );
+	width: 224px;
+	height: 264px;
+	margin-left: -53px;
+	margin-top: 23px;
+}
+
+.kcp-cs-overlay__media--skew-base,
+.kcp-cs-overlay__fill--skew-base {
+	transform: skewY( 4deg ) perspective( 1171px ) rotateY( -55deg );
+	width: 188px;
+	height: 253px;
+	margin-left: -44px;
+	margin-top: -1px;
+}
+
+.kcp-cs-overlay__media--skew-top,
+.kcp-cs-overlay__media--skew-bottom,
+.kcp-cs-overlay__media--skew-wall,
+.kcp-cs-overlay__media--skew-base {
+	object-fit: cover;
+}
+
+/* ── Handle badge (reference: .selected-handle) ────────────────── */
+
+.kcp-cs-overlay--handle {
+	height: 60px;
+	width: 60px;
+	border-radius: 100%;
+	border: 3px solid #a49d93;
+	overflow: hidden;
+	background-color: #fff;
+	z-index: 6;
+	box-shadow: 0 2px 8px rgba( 0, 0, 0, 0.08 );
+}
+
+.kcp-cs-overlay--handle img,
+.kcp-cs-overlay--handle .kcp-cs-overlay__handle-media {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate( -50%, -50% );
+	max-width: 72%;
+	max-height: 72%;
+	width: auto;
+	height: auto;
+	object-fit: contain;
+}
+
+/* ── Position 2 — hoge kasten ────────────────────────────────────── */
+
+.kcp-cs-overlays--pos-2 .kcp-cs-overlay--topdoor {
+	left: 33px;
+	top: -0.6px;
+	width: 210px;
+	height: 377.1px;
+}
+
+.kcp-cs-overlays--pos-2 .kcp-cs-overlay--bottomdoor {
+	left: 33px;
+	top: 368.9px;
+	width: 104px;
+	height: 247px;
+}
+
+.kcp-cs-overlays--pos-2 .kcp-cs-overlay--cabinet {
+	left: 36px;
+	top: 17.5px;
+	width: 227px;
+	height: 590px;
+}
+
+.kcp-cs-overlays--pos-2 .kcp-cs-overlay--cabinet .kcp-cs-overlay__clip .kcp-cs-overlay__media,
+.kcp-cs-overlays--pos-2 .kcp-cs-overlay--cabinet .kcp-cs-overlay__clip .kcp-cs-overlay__fill {
+	width: 227px;
+	height: 590px;
+}
+
+.kcp-cs-overlays--pos-2 .kcp-cs-overlay--skirt {
+	left: 48px;
+	bottom: 50.6px;
+	width: 215.5px;
+	height: 54px;
+}
+
+.kcp-cs-overlays--pos-2 .kcp-cs-overlay--skirt .kcp-cs-overlay__clip .kcp-cs-overlay__media,
+.kcp-cs-overlays--pos-2 .kcp-cs-overlay--skirt .kcp-cs-overlay__clip .kcp-cs-overlay__fill {
+	width: 215.5px;
+	height: 54px;
+}
+
+.kcp-cs-overlays--pos-2 .kcp-cs-overlay--handle {
+	left: 57px;
+	top: 45%;
+	transform: translateY( -50% );
+}
+
+/* ── Position 3 — bovenkasten ────────────────────────────────────── */
+
+.kcp-cs-overlays--pos-3 .kcp-cs-overlay--door {
+	left: 1px;
+	top: -2px;
+	width: 131px;
+	height: 295px;
+}
+
+.kcp-cs-overlays--pos-3 .kcp-cs-overlay--cabinet {
+	left: 7px;
+	top: 18.5px;
+	width: 222px;
+	height: 287px;
+}
+
+.kcp-cs-overlays--pos-3 .kcp-cs-overlay--cabinet .kcp-cs-overlay__clip .kcp-cs-overlay__media,
+.kcp-cs-overlays--pos-3 .kcp-cs-overlay--cabinet .kcp-cs-overlay__clip .kcp-cs-overlay__fill {
+	width: 222px;
+	height: 287px;
+}
+
+.kcp-cs-overlays--pos-3 .kcp-cs-overlay--handle {
+	left: 33px;
+	top: 40%;
+	transform: translateY( -50% );
+}
+
+/* ── Position 4 — onderkasten ────────────────────────────────────── */
+
+.kcp-cs-overlays--pos-4 .kcp-cs-overlay--door {
+	left: 17px;
+	top: 0;
+	width: 107px;
+	height: 264px;
+}
+
+.kcp-cs-overlays--pos-4 .kcp-cs-overlay--cabinet {
+	left: 123px;
+	top: 3.9px;
+	width: 140px;
+	height: 251px;
+}
+
+.kcp-cs-overlays--pos-4 .kcp-cs-overlay--cabinet .kcp-cs-overlay__clip .kcp-cs-overlay__media,
+.kcp-cs-overlays--pos-4 .kcp-cs-overlay--cabinet .kcp-cs-overlay__clip .kcp-cs-overlay__fill {
+	width: 140px;
+	height: 251px;
+}
+
+.kcp-cs-overlays--pos-4 .kcp-cs-overlay--skirt {
+	left: 34px;
+	bottom: 2px;
+	width: 229px;
+	height: 59px;
+}
+
+.kcp-cs-overlays--pos-4 .kcp-cs-overlay--skirt .kcp-cs-overlay__clip .kcp-cs-overlay__media,
+.kcp-cs-overlays--pos-4 .kcp-cs-overlay--skirt .kcp-cs-overlay__clip .kcp-cs-overlay__fill {
+	width: 229px;
+	height: 59px;
+}
+
+.kcp-cs-overlays--pos-4 .kcp-cs-overlay--handle {
+	left: 227px;
+	top: 29%;
+	transform: translateY( -50% );
+}
+
+/* Handles visible on all cabinet types (reference behaviour) */

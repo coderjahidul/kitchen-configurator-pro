@@ -4,6 +4,7 @@
 
 import { createDesignStore } from './design-store.js';
 import { DesignStep } from './DesignStep.js';
+import { syncKitchenTypeFromUrl } from './design-selection-storage.js';
 
 document.addEventListener( 'DOMContentLoaded', () => {
 	const root = document.getElementById( 'kcp-design-root' );
@@ -11,6 +12,8 @@ document.addEventListener( 'DOMContentLoaded', () => {
 	if ( ! root ) {
 		return;
 	}
+
+	syncKitchenTypeFromUrl();
 
 	const config = window.kcpDesignStep || {};
 	const store = createDesignStore( config );

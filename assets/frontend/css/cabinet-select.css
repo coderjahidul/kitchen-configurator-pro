@@ -1,9 +1,15 @@
 /**
- * selecteer kasten step — matched to configurator.keukenkastenfabriek.nl layout.
+ * selecteer kasten — matched to configurator.keukenkastenfabriek.nl
+ * Reference: cabinet-group-selection-page
  */
 
 body.kcp-cabinet-select-active {
 	background: #f0efee !important;
+}
+
+body.kcp-cabinet-select-active .site,
+body.kcp-cabinet-select-active #page {
+	background: #f0efee;
 }
 
 body.kcp-cabinet-select-active .site-content .ast-container,
@@ -50,62 +56,27 @@ body.kcp-cabinet-select-active .entry-content > .wp-block-paragraph:empty {
 	box-sizing: border-box;
 }
 
-.kcp-cabinet-select__page {
-	width: min( 100%, 1320px );
-	margin: 0 auto;
-	padding: 24px clamp( 16px, 4vw, 48px ) 48px;
-}
-
-/* ── Breadcrumb ──────────────────────────────────────────────────── */
+/* ── Breadcrumbs (configurator step navigation) ────────────────── */
 
 .kcp-cabinet-select__breadcrumbs {
-	margin-bottom: 18px;
+	margin: 0 0 24px;
 }
 
 .kcp-cabinet-select__breadcrumb-list {
-	display: inline-block;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 16px;
 	margin: 0;
 	padding: 0;
 	list-style: none;
-	font-size: 12px;
+	font-size: 14px;
+	font-weight: 500;
 	text-transform: lowercase;
 }
 
-.kcp-cabinet-select__breadcrumb-list li {
-	display: inline-block;
-	vertical-align: middle;
-	position: relative;
-	padding: 0 7px 0 13px;
-}
-
-.kcp-cabinet-select__breadcrumb-list li::before {
-	content: "";
-	position: absolute;
-	left: 1px;
-	top: 50%;
-	transform: translateY( -50% );
-	width: 4px;
-	height: 1px;
-	background: var( --kcp-cs-muted );
-}
-
-.kcp-cabinet-select__breadcrumb-list li:first-child {
-	padding-left: 0;
-}
-
-.kcp-cabinet-select__breadcrumb-list li:first-child::before {
-	display: none;
-}
-
-.kcp-cabinet-select__breadcrumb-list a,
-.kcp-cabinet-select__breadcrumb-list span {
-	display: inline-block;
+.kcp-cabinet-select__breadcrumb-list a {
 	color: var( --kcp-cs-text );
-	font-weight: 500;
 	text-decoration: none;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
 }
 
 .kcp-cabinet-select__breadcrumb-list a:hover,
@@ -113,12 +84,21 @@ body.kcp-cabinet-select-active .entry-content > .wp-block-paragraph:empty {
 	text-decoration: underline;
 }
 
-/* ── Page shell ──────────────────────────────────────────────────── */
+.kcp-cabinet-select__breadcrumb-list [aria-current="page"] {
+	color: var( --kcp-cs-muted );
+}
 
-.kcp-cabinet-select__shell {
+/* ── Page (cabinet-group-selection-page) ───────────────────────── */
+
+.kcp-cabinet-select__page {
 	position: relative;
 	overflow: hidden;
+	width: min( 100%, 1320px );
+	margin: 0 auto;
+	padding: 24px clamp( 16px, 4vw, 48px ) 48px;
 }
+
+/* ── Back link (meerinfoblok-backtodesign) ─────────────────────── */
 
 .kcp-cabinet-select__link {
 	position: relative;
@@ -150,8 +130,8 @@ body.kcp-cabinet-select-active .entry-content > .wp-block-paragraph:empty {
 
 .kcp-cabinet-select__link--back {
 	position: absolute;
-	top: 10px;
-	right: 0;
+	right: clamp( 16px, 4vw, 48px );
+	top: 34px;
 	z-index: 2;
 }
 
@@ -159,22 +139,53 @@ body.kcp-cabinet-select-active .entry-content > .wp-block-paragraph:empty {
 	font-size: 13px;
 }
 
+/* ── Holder (cabinet-group-selection-holder) ─────────────────────── */
+
 .kcp-cabinet-select__holder {
-	display: grid;
-	grid-template-columns: minmax( 0, 0.95fr ) minmax( 0, 1.05fr );
-	gap: clamp( 24px, 4vw, 64px );
-	align-items: start;
+	display: table;
+	width: 100%;
 	min-height: 815px;
+	max-height: 815px;
+	table-layout: fixed;
 }
 
-/* ── Left column ───────────────────────────────────────────────── */
+.kcp-cabinet-select__content,
+.kcp-cabinet-select__stage {
+	display: table-cell;
+	vertical-align: top;
+}
 
 .kcp-cabinet-select__content {
 	padding-right: 20px;
+	width: 48%;
+}
+
+.kcp-cabinet-select__stage {
+	text-align: right;
+	padding-top: 60px;
+	width: 52%;
+	overflow: hidden;
+}
+
+/* ── Visual scaler (fits 650×730 stack into column width) ─────── */
+
+.kcp-cabinet-select__visual-scaler {
+	display: inline-block;
+	margin-left: auto;
+	vertical-align: top;
+	overflow: visible;
+}
+
+.kcp-cabinet-select__visuals {
+	position: relative;
+	width: 650px;
+	height: 730px;
+	display: inline-block;
+	transform-origin: top right;
 }
 
 .kcp-cabinet-select__title {
-	margin: 0 0 16px;
+	margin: 0 0 10px;
 	font-size: clamp( 2.25rem, 5vw, 3.75rem );
 	font-weight: 500;
 	line-height: 1.05;
@@ -182,48 +193,56 @@ body.kcp-cabinet-select-active .entry-content > .wp-block-paragraph:empty {
 }
 
 .kcp-cabinet-select__description {
-	margin: 0 0 0;
+	margin: 0;
 	max-width: 380px;
 	text-transform: lowercase;
 }
 
+/* Categories (cabinet-group-selection-ul) */
+
 .kcp-cabinet-select__categories {
-	margin: 40px 0 0;
-	padding: 0;
+	margin: 0;
+	padding: 40px 0 0;
 	list-style: none;
 }
 
-.kcp-cabinet-select__categories li + li {
-	margin-top: 10px;
+.kcp-cabinet-select__categories li {
+	padding-top: 10px;
+}
+
+.kcp-cabinet-select__categories li:first-child {
+	padding-top: 0;
 }
 
 .kcp-cabinet-select__category {
-	display: inline-block;
+	display: block;
 	width: 100%;
 	max-width: 420px;
 	padding: 21px 40px;
 	border: 2px solid #000;
-	border-radius: 999px;
-	background: transparent;
+	border-radius: 60px;
+	background: #fff;
 	color: #000;
 	font: inherit;
-	font-size: clamp( 1.25rem, 2.5vw, 1.75rem );
+	font-size: clamp( 1.125rem, 2.5vw, 1.375rem );
 	font-weight: 500;
 	line-height: 1.2;
 	text-align: center;
-	text-decoration: none;
+	text-decoration: none !important;
 	text-transform: lowercase;
 	cursor: pointer;
-	transition: background 0.4s ease, color 0.4s ease, border-color 0.4s ease;
+	transition: background 0.4s ease, color 0.4s ease, border-color 0.4s ease, filter 0.4s ease;
 }
 
 .kcp-cabinet-select__category:hover,
 .kcp-cabinet-select__category:focus-visible,
-.kcp-cabinet-select__category.is-active {
+.kcp-cabinet-select__category.button-is-hovering {
 	background: #000;
 	color: #fff;
-	text-decoration: none;
+	text-decoration: none !important;
 }
+
+/* Summary (configurator-detail-holder-design) */
 
 .kcp-cabinet-select__summary {
 	padding-top: 50px;
@@ -231,20 +250,25 @@ body.kcp-cabinet-select-active .entry-content > .wp-block-paragraph:empty {
 }
 
 .kcp-cabinet-select__summary-title {
-	margin: 0 0 0;
+	margin: 0;
 	font-size: 16px;
 	font-weight: 700;
 	text-transform: none;
 }
 
-.kcp-cabinet-select__summary-lines {
+.kcp-cabinet-select__design-parts {
 	margin: 0;
-	font-size: 14px;
-	line-height: 1.5;
+	padding-bottom: 10px;
+	font-size: 15px;
+	line-height: 18px;
 }
 
-.kcp-cabinet-select__summary-lines--empty {
+.kcp-cabinet-select__design-parts--empty {
 	color: var( --kcp-cs-muted );
+}
+
+.kcp-cabinet-select__summary-item {
+	display: block;
 }
 
 .kcp-cabinet-select__summary-item strong {
@@ -256,27 +280,15 @@ body.kcp-cabinet-select-active .entry-content > .wp-block-paragraph:empty {
 	color: var( --kcp-cs-muted );
 }
 
-/* ── Right column visuals ──────────────────────────────────────── */
-
-.kcp-cabinet-select__stage {
-	padding-top: 60px;
-	text-align: right;
-}
-
-.kcp-cabinet-select__visuals {
-	position: relative;
-	width: min( 100%, 650px );
-	height: clamp( 420px, 55vw, 730px );
-	margin-left: auto;
-	display: inline-block;
-}
+/* ── Left column ───────────────────────────────────────────────── */
 
 .kcp-cabinet-select__visual {
 	position: absolute;
 	margin: 0;
 	border: 0 !important;
 	text-decoration: none;
-	transition: filter 0.4s ease, opacity 0.4s ease;
+	transition: filter 0.4s ease;
+	cursor: pointer;
 }
 
 .kcp-cabinet-select__visual-inner,
@@ -306,6 +318,7 @@ body.kcp-cabinet-select-active .entry-content > .wp-block-paragraph:empty {
 	z-index: 3;
 	left: 393px;
 	top: 0;
+	width: 227px;
 }
 
 .kcp-cabinet-select__visual--pos-4 {
@@ -316,13 +329,16 @@ body.kcp-cabinet-select-active .entry-content > .wp-block-paragraph:empty {
 	height: 290px;
 }
 
-.kcp-cabinet-select__visuals.is-hovering .kcp-cabinet-select__visual {
+/* Reference hover: button-is-hovering desaturates non-active cabinets */
+.kcp-cabinet-select__visuals.button-is-hovering .kcp-cabinet-select__visual {
 	filter: saturate( 0 ) brightness( 1.6 ) invert( 0.2 );
 }
 
-.kcp-cabinet-select__visuals.is-hovering .kcp-cabinet-select__visual.is-active {
+.kcp-cabinet-select__visuals.button-is-hovering .kcp-cabinet-select__visual.kcp-cabinet-select__visual--hover {
 	filter: saturate( 1 ) brightness( 1 ) invert( 0 );
 }
+
+/* ── Right column visuals (cabinet-group-selection-img-holder) ─── */
 
 .kcp-cabinet-select__fallback-image {
 	display: block;
@@ -332,22 +348,27 @@ body.kcp-cabinet-select-active .entry-content > .wp-block-paragraph:empty {
 }
 
 .kcp-cabinet-select__fallback-image--placeholder {
-	min-height: clamp( 320px, 45vw, 560px );
+	min-height: 560px;
 	background: linear-gradient( 180deg, rgba( 255, 255, 255, 0.35 ), rgba( 0, 0, 0, 0.03 ) );
 }
 
-/* ── Responsive ──────────────────────────────────────────────────── */
+/* ── Responsive (reference breakpoints) ──────────────────────────── */
 
 @media ( max-width: 1100px ) {
-	.kcp-cabinet-select__visuals {
-		transform: scale( 0.82 );
-		transform-origin: top right;
+	.kcp-cabinet-select__category {
+		max-width: 320px;
+		padding: 15px 25px;
+		font-size: 18px;
 	}
 }
 
-@media ( max-width: 900px ) {
-	.kcp-cabinet-select__holder {
-		grid-template-columns: 1fr;
+@media ( max-width: 767px ) {
+	.kcp-cabinet-select__holder,
+	.kcp-cabinet-select__content,
+	.kcp-cabinet-select__stage {
+		display: block;
+		width: 100%;
+		max-height: none;
 		min-height: 0;
 	}
 
@@ -356,21 +377,34 @@ body.kcp-cabinet-select-active .entry-content > .wp-block-paragraph:empty {
 	}
 
 	.kcp-cabinet-select__stage {
-		order: -1;
 		padding-top: 0;
 		text-align: center;
+		overflow: visible;
 	}
 
-	.kcp-cabinet-select__visuals {
-		margin: 0 auto;
-		transform: scale( 0.72 );
-		transform-origin: top center;
+	.kcp-cabinet-select__visual-scaler {
+		margin-left: auto;
+		margin-right: auto;
+	}
+
+	.kcp-cabinet-select__categories {
+		padding-top: 20px;
+	}
+
+	.kcp-cabinet-select__category {
+		font-size: 16px;
+		padding: 12px 20px;
 	}
 
 	.kcp-cabinet-select__link--back {
-		position: static;
-		display: inline-block;
+		position: relative;
+		top: 0;
+		right: auto;
 		margin-bottom: 20px;
+	}
+
+	.kcp-cabinet-select__summary {
+		margin-top: -30px;
 	}
 }
 
@@ -380,12 +414,6 @@ body.kcp-cabinet-select-active .entry-content > .wp-block-paragraph:empty {
 	}
 
 	.kcp-cabinet-select__category {
-		padding: 14px 24px;
-		font-size: 1.125rem;
-	}
-
-	.kcp-cabinet-select__visuals {
-		height: 360px;
-		transform: scale( 0.55 );
+		font-size: 13px;
 	}
 }

@@ -7,6 +7,8 @@
  * @var array<string, mixed> $hero Hero settings.
  */
 
+use KitchenConfiguratorPro\Services\KitchenTypeService;
+
 defined( 'ABSPATH' ) || exit;
 
 $button_1   = is_array( $hero['button_1'] ?? null ) ? $hero['button_1'] : array();
@@ -15,8 +17,12 @@ $help_link  = is_array( $hero['help_link'] ?? null ) ? $hero['help_link'] : arra
 $buttons    = array();
 $image_urls = is_array( $hero['image_urls'] ?? null ) ? $hero['image_urls'] : array();
 $interval   = max( 2, (int) ( $hero['image_interval'] ?? 4 ) ) * 1000;
+$kitchen_types = array(
+	KitchenTypeService::TYPE_GREP,
+	KitchenTypeService::TYPE_GREEPLOOS,
+);
 
-foreach ( array( $button_1, $button_2 ) as $button ) {
+foreach ( array( $button_1, $button_2 ) as $index => $button ) {
 	$label = trim( (string) ( $button['label'] ?? '' ) );
 	$url   = trim( (string) ( $button['url'] ?? '' ) );
 
@@ -24,9 +30,12 @@ foreach ( array( $button_1, $button_2 ) as $button ) {
 		continue;
 	}
 
+	$kitchen_type = (string) ( $kitchen_types[ $index ] ?? KitchenTypeService::TYPE_GREP );
+
 	$buttons[] = array(
-		'label' => $label,
-		'url'   => $url,
+		'label'        => $label,
+		'url'          => KitchenTypeService::append_query_param( $url, $kitchen_type ),
+		'kitchen_type' => $kitchen_type,
 	);
 }
 
@@ -56,7 +65,11 @@ $image_urls = array_values(
 		<?php if ( ! empty( $buttons ) ) : ?>
 			<div class="kcp-shop-hero__actions">
 				<?php foreach ( $buttons as $button ) : ?>
-					<a class="kcp-shop-hero__button" href="<?php echo esc_url( $button['url'] ); ?>">
+					<a
+						class="kcp-shop-hero__button"
+						href="<?php echo esc_url( $button['url'] ); ?>"
+						data-kcp-kitchen-type="<?php echo esc_attr( (string) ( $button['kitchen_type'] ?? KitchenTypeService::TYPE_GREP ) ); ?>"
+					>
 						<?php echo esc_html( $button['label'] ); ?>
 					</a>
 				<?php endforeach; ?>

@@ -129,13 +129,15 @@ export function renderHandleOverlay( selection ) {
 /**
  * @param {object} selections Current zone selections.
  * @param {object} masks      Mask image URLs keyed by zone.
+ * @param {object} options    Render options.
  * @return {string}
  */
-export function renderCabinetOverlaysInner( selections, masks ) {
+export function renderCabinetOverlaysInner( selections, masks, options = {} ) {
+	const showHandle = false !== options.showHandle;
 	const front = renderFrontOverlay( 'front', selections.front, masks.front || '' );
 	const cabinet = renderClippedOverlay( 'cabinet', selections.cabinet, 'cabinet', 'kcp-design-clip-cabinet' );
 	const plinth = renderClippedOverlay( 'plinth', selections.plinth, 'plinth', 'kcp-design-clip-plinth' );
-	const handle = renderHandleOverlay( selections.handle_strip );
+	const handle = showHandle ? renderHandleOverlay( selections.handle_strip ) : '';
 
 	return `${ front }${ cabinet }${ plinth }${ handle }`;
 }
@@ -143,12 +145,13 @@ export function renderCabinetOverlaysInner( selections, masks ) {
 /**
  * @param {object} selections Current zone selections.
  * @param {object} masks      Mask image URLs keyed by zone.
+ * @param {object} options    Render options.
  * @return {string}
  */
-export function renderCabinetOverlays( selections, masks ) {
+export function renderCabinetOverlays( selections, masks, options = {} ) {
 	return `
 		<div class="kcp-design__overlays" aria-hidden="true">
-			${ renderCabinetOverlaysInner( selections, masks ) }
+			${ renderCabinetOverlaysInner( selections, masks, options ) }
 		</div>
 	`;
 }

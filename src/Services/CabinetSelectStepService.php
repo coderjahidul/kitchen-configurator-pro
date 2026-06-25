@@ -62,13 +62,19 @@ final class CabinetSelectStepService {
 			foreach ( $repo->find_all( array( 'is_active' => '1' ) ) as $category ) {
 				$row          = Arr::to_array( $category );
 				$slug         = (string) ( $row['slug'] ?? '' );
+				$position     = self::category_visual_position( $slug );
+				$image_urls   = self::category_image_urls( $slug );
+				$mask_sets    = self::category_masks_by_type( $position );
 				$categories[] = array(
-					'id'              => (int) ( $row['id'] ?? 0 ),
-					'slug'            => $slug,
-					'name'            => (string) ( $row['name'] ?? '' ),
-					'description'     => (string) ( $row['description'] ?? '' ),
-					'image_url'       => self::category_image_url( $slug ),
-					'visual_position' => self::category_visual_position( $slug ),
+					'id'                     => (int) ( $row['id'] ?? 0 ),
+					'slug'                   => $slug,
+					'name'                   => (string) ( $row['name'] ?? '' ),
+					'description'            => (string) ( $row['description'] ?? '' ),
+					'image_url'              => (string) ( $image_urls[ KitchenTypeService::TYPE_GREP ] ?? '' ),
+					'image_urls'             => $image_urls,
+					'visual_position'        => $position,
+					'category_masks'         => (array) ( $mask_sets[ KitchenTypeService::TYPE_GREP ] ?? array() ),
+					'category_masks_by_type' => $mask_sets,
 				);
 			}
 		}
@@ -94,21 +100,31 @@ final class CabinetSelectStepService {
 			$design_edit_url = $design_url;
 		}
 
+		$category_list_url = (string) ( $config['category_list_url'] ?? '' );
+		if ( '' === $category_list_url ) {
+			$category_list_url = self::resolve_category_list_url();
+		}
+
+		$defaults = self::defaults();
+
 		return array(
 			'breadcrumb_parent'     => $breadcrumb_parent,
 			'breadcrumb_parent_url' => $breadcrumb_parent_url,
-			'breadcrumb_current'    => (string) ( $config['breadcrumb_current'] ?? self::defaults()['breadcrumb_current'] ),
-			'heading'               => (string) ( $config['heading'] ?? '' ),
-			'description'           => (string) ( $config['description'] ?? '' ),
+			'breadcrumb_current'    => self::string_or_default( $config, 'breadcrumb_current', $defaults['breadcrumb_current'] ),
+			'heading'               => self::string_or_default( $config, 'heading', $defaults['heading'] ),
+			'description'           => self::string_or_default( $config, 'description', $defaults['description'] ),
 			'preview_image_url'     => (string) ( $config['preview_image_url'] ?? '' ),
 			'back_url'              => $back_url,
-			'back_label'            => (string) ( $config['back_label'] ?? self::defaults()['back_label'] ),
+			'back_label'            => self::string_or_default( $config, 'back_label', $defaults['back_label'] ),
 			'design_edit_url'       => $design_edit_url,
-			'design_edit_label'     => (string) ( $config['design_edit_label'] ?? self::defaults()['design_edit_label'] ),
-			'summary_heading'       => (string) ( $config['summary_heading'] ?? self::defaults()['summary_heading'] ),
-			'category_list_url'     => (string) ( $config['category_list_url'] ?? '' ),
+			'design_edit_label'     => self::string_or_default( $config, 'design_edit_label', $defaults['design_edit_label'] ),
+			'summary_heading'       => self::string_or_default( $config, 'summary_heading', $defaults['summary_heading'] ),
+			'category_list_url'     => $category_list_url,
 			'categories'            => $categories,
 			'design_zones'          => self::design_zone_labels( $design ),
+			'catalog_options'       => self::catalog_options_by_zone( $design ),
+			'kitchen_types'         => KitchenTypeService::labels(),
+			'default_kitchen_type'  => KitchenTypeService::TYPE_GREP,
 		);
 	}
 
@@ -156,6 +172,41 @@ final class CabinetSelectStepService {
 			'summary_heading'       => (string) ( $step['summary_heading'] ?? $defaults['summary_heading'] ),
 			'category_list_url'     => (string) ( $step['category_list_url'] ?? '' ),
 		);
+	}
+
+	/**
+	 * Active catalog options keyed by design zone id (for resolving stored selections).
+	 *
+	 * @param array<string, mixed> $design Design step settings.
+	 * @return array<string, array<int, array<string, mixed>>>
+	 */
+	private static function catalog_options_by_zone( array $design ): array {
+		if ( ! function_exists( 'kcp_plugin' ) ) {
+			return array();
+		}
+
+		$zones = is_array( $design['zones'] ?? null ) ? $design['zones'] : DesignStepService::default_zones();
+		/** @var DesignZoneCatalogService $catalog */
+		$catalog   = kcp_plugin()->container()->get( DesignZoneCatalogService::class );
+		$hydrated  = $catalog->hydrate_zones( $zones );
+		$by_zone   = array();
+
+		foreach ( $hydrated as $zone ) {
+			if ( ! is_array( $zone ) ) {
+				continue;
+			}
+
+			$zone_id = sanitize_key( (string) ( $zone['id'] ?? '' ) );
+
+			if ( '' === $zone_id ) {
+				continue;
+			}
+
+			$options = $zone['colors'] ?? array();
+			$by_zone[ $zone_id ] = is_array( $options ) ? $options : array();
+		}
+
+		return $by_zone;
 	}
 
 	/**
@@ -246,22 +297,59 @@ final class CabinetSelectStepService {
 	}
 
 	/**
-	 * Default preview image for a cabinet category slug.
+	 * Base cabinet preview images per kitchen type.
+	 *
+	 * @return array<string, string>
 	 */
-	private static function category_image_url( string $slug ): string {
+	private static function category_image_urls( string $slug ): array {
 		$map = array(
-			'onderkasten' => 'greep-onderkasten.png',
-			'bovenkasten' => 'greep-bovenkasten.png',
-			'hoge-kasten' => 'greep-hogekast2deuren.png',
+			'onderkasten' => array(
+				KitchenTypeService::TYPE_GREP      => 'greep-onderkasten.png',
+				KitchenTypeService::TYPE_GREEPLOOS => 'greeploos-onderkasten.png',
+			),
+			'bovenkasten' => array(
+				KitchenTypeService::TYPE_GREP      => 'greep-bovenkasten.png',
+				KitchenTypeService::TYPE_GREEPLOOS => 'greeploos-bovenkasten.png',
+			),
+			'hoge-kasten' => array(
+				KitchenTypeService::TYPE_GREP      => 'greep-hogekast2deuren.png',
+				KitchenTypeService::TYPE_GREEPLOOS => 'greeploos-hogekast2deuren.png',
+			),
 		);
 
-		$file = $map[ $slug ] ?? '';
+		$files = $map[ $slug ] ?? array();
+		$urls  = array();
 
-		if ( '' === $file ) {
-			return '';
+		foreach ( $files as $type => $file ) {
+			$urls[ $type ] = '' !== $file
+				? KCP_PLUGIN_URL . 'assets/frontend/images/cabinet-select/' . $file
+				: '';
 		}
 
-		return KCP_PLUGIN_URL . 'assets/frontend/images/cabinet-select/' . $file;
+		return $urls;
+	}
+
+	/**
+	 * Door mask images grouped by kitchen type.
+	 *
+	 * @return array<string, array<string, string>>
+	 */
+	private static function category_masks_by_type( int $position ): array {
+		return array(
+			KitchenTypeService::TYPE_GREP      => self::category_masks( $position, KitchenTypeService::TYPE_GREP ),
+			KitchenTypeService::TYPE_GREEPLOOS => self::category_masks( $position, KitchenTypeService::TYPE_GREEPLOOS ),
+		);
+	}
+
+	/**
+	 * Default preview image for a cabinet category slug.
+	 *
+	 * @deprecated Use category_image_urls().
+	 */
+	private static function category_image_url( string $slug ): string {
+		$urls = self::category_image_urls( $slug );
+
+		return (string) ( $urls[ KitchenTypeService::TYPE_GREP ] ?? '' );
 	}
 
 	/**
@@ -275,5 +363,65 @@ final class CabinetSelectStepService {
 		);
 
 		return (int) ( $map[ $slug ] ?? 1 );
+	}
+
+	/**
+	 * Door mask images for category cabinet colour overlays.
+	 *
+	 * @return array<string, string>
+	 */
+	private static function category_masks( int $position, string $kitchen_type = KitchenTypeService::TYPE_GREP ): array {
+		$folder = KitchenTypeService::TYPE_GREEPLOOS === KitchenTypeService::normalize( $kitchen_type )
+			? 'greeploos'
+			: 'greep';
+		$base   = KCP_PLUGIN_URL . 'assets/frontend/images/cabinet-select/masks/' . $folder . '/';
+
+		if ( 2 === $position ) {
+			return array(
+				'front_top'    => $base . '2-door-top.png',
+				'front_bottom' => $base . '2-door-bottom.png',
+			);
+		}
+
+		if ( 3 === $position ) {
+			return array(
+				'front' => $base . '3-door.png',
+			);
+		}
+
+		if ( 4 === $position ) {
+			return array(
+				'front' => $base . '4-door.png',
+			);
+		}
+
+		return array();
+	}
+
+	/**
+	 * @param array<string, mixed> $config
+	 * @param string               $key
+	 * @param string               $default
+	 */
+	private static function string_or_default( array $config, string $key, string $default ): string {
+		$value = trim( (string) ( $config[ $key ] ?? '' ) );
+
+		return '' !== $value ? $value : $default;
+	}
+
+	/**
+	 * Resolve the shop/category list URL used when a cabinet group is selected.
+	 */
+	private static function resolve_category_list_url(): string {
+		$shop_page_id = (int) get_option( 'woocommerce_shop_page_id', 0 );
+
+		if ( $shop_page_id > 0 ) {
+			$url = get_permalink( $shop_page_id );
+			if ( is_string( $url ) && '' !== $url ) {
+				return $url;
+			}
+		}
+
+		return home_url( '/shop/' );
 	}
 }

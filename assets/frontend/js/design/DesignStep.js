@@ -7,6 +7,7 @@ import { SelectionModal } from './SelectionModal.js';
 import { saveDesignSelections } from './design-selection-storage.js';
 import { renderCabinetOverlays, renderCabinetOverlaysInner, renderPreviewClipDefs } from './cabinet-preview.js';
 import { bindPreviewStageSync } from './cabinet-preview-stage.js';
+import { showsHandleStrip } from './kitchen-type-config.js';
 
 export class DesignStep {
 	/**
@@ -198,7 +199,7 @@ export class DesignStep {
 	}
 
 	updateHotspots( state ) {
-		const zones = Array.isArray( state.config.zones ) ? state.config.zones : [];
+		const zones = this.store.getVisibleZones();
 
 		zones.forEach( ( zone ) => {
 			const element = this.root.querySelector( `.kcp-design__hotspot[data-zone-id="${ zone.id }"]` );
@@ -226,7 +227,8 @@ export class DesignStep {
 
 		const markup = renderCabinetOverlaysInner(
 			state.selections,
-			state.config.preview_masks || {}
+			state.config.preview_masks || {},
+			{ showHandle: showsHandleStrip( state.kitchenType ) }
 		);
 
 		container.classList.add( 'is-updating' );
@@ -253,7 +255,8 @@ export class DesignStep {
 	render( state ) {
 		const config = state.config;
 		const imageUrl = ( config.base_image_url || '' ).trim();
-		const zones = Array.isArray( config.zones ) ? config.zones : [];
+		const zones = this.store.getVisibleZones();
+		const showHandles = showsHandleStrip( state.kitchenType );
 
 		this.root.innerHTML = `
 			<div class="kcp-design__page">
@@ -284,14 +287,14 @@ export class DesignStep {
 						} ).join( '' ) }
 					</div>
 
-					<div class="kcp-design__cabinet kcp-design__cabinet--handle">
+					<div class="kcp-design__cabinet kcp-design__cabinet--handle${ showHandles ? '' : ' kcp-design__cabinet--greeploos' }">
 						<div class="kcp-design__visual">
 							${ renderPreviewClipDefs() }
 							${ imageUrl
 								? `<img class="kcp-design__image" src="${ escapeHtml( imageUrl ) }" alt="" loading="lazy" decoding="async" />`
 								: '<div class="kcp-design__image kcp-design__image--placeholder"></div>' }
 							<div class="kcp-design__preview-stage">
-								${ renderCabinetOverlays( state.selections, config.preview_masks || {} ) }
+								${ renderCabinetOverlays( state.selections, config.preview_masks || {}, { showHandle: showHandles } ) }
 								<div class="kcp-design__hotspots">
 									${ zones.map( ( zone ) => this.renderHotspot(
 										zone,

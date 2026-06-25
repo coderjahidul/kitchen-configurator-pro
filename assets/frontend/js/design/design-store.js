@@ -2,18 +2,36 @@
  * Design step state helpers.
  */
 
-import { saveDesignSelections, saveDesignSelection, loadDesignSelections } from './design-selection-storage.js';
+import {
+	loadConfiguratorState,
+	saveConfiguratorState,
+	saveDesignSelection,
+} from './design-selection-storage.js';
+import { showsHandleStrip } from './kitchen-type-config.js';
 
 export function createDesignStore( initialConfig ) {
 	const listeners = new Set();
+	const persisted = loadConfiguratorState();
 	const state = {
 		config: initialConfig,
-		selections: loadDesignSelections(),
+		selections: persisted.selections,
+		kitchenType: persisted.kitchen_type,
 		activeZoneId: null,
 		modalOpen: false,
 	};
 
-	const getState = () => ( { ...state, selections: { ...state.selections } } );
+	const getState = () => ( {
+		...state,
+		selections: { ...state.selections },
+		kitchenType: state.kitchenType,
+	} );
+
+	const persist = () => {
+		saveConfiguratorState( {
+			kitchen_type: state.kitchenType,
+			selections: state.selections,
+		} );
+	};
 
 	const emit = () => {
 		listeners.forEach( ( listener ) => listener( getState() ) );
@@ -25,6 +43,9 @@ export function createDesignStore( initialConfig ) {
 			return () => listeners.delete( listener );
 		},
 		getState,
+		getKitchenType() {
+			return state.kitchenType;
+		},
 		setActiveZone( zoneId ) {
 			state.activeZoneId = zoneId;
 			state.modalOpen = null !== zoneId;
@@ -40,7 +61,7 @@ export function createDesignStore( initialConfig ) {
 			state.activeZoneId = null;
 			state.modalOpen = false;
 			saveDesignSelection( zoneId, color );
-			saveDesignSelections( state.selections );
+			persist();
 			emit();
 		},
 		getZone( zoneId ) {
@@ -48,6 +69,15 @@ export function createDesignStore( initialConfig ) {
 		},
 		getSelection( zoneId ) {
 			return state.selections[ zoneId ] || null;
+		},
+		getVisibleZones() {
+			return ( state.config.zones || [] ).filter( ( zone ) => {
+				if ( 'handle_strip' === zone.id ) {
+					return showsHandleStrip( state.kitchenType );
+				}
+
+				return true;
+			} );
 		},
 	};
 }
