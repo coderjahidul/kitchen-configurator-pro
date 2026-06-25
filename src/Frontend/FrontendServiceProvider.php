@@ -54,6 +54,16 @@ final class FrontendServiceProvider {
 		);
 
 		$this->container->singleton(
+			CabinetGroupShortcode::class,
+			static fn () => new CabinetGroupShortcode()
+		);
+
+		$this->container->singleton(
+			CabinetGroupAssets::class,
+			static fn () => new CabinetGroupAssets()
+		);
+
+		$this->container->singleton(
 			CabinetSelectAssets::class,
 			static fn () => new CabinetSelectAssets()
 		);
@@ -78,8 +88,10 @@ final class FrontendServiceProvider {
 		$this->container->get( Shortcode::class )->register();
 		$this->container->get( DesignShortcode::class )->register();
 		$this->container->get( CabinetSelectShortcode::class )->register();
+		$this->container->get( CabinetGroupShortcode::class )->register();
 		$this->container->get( Assets::class )->register();
 		$this->container->get( DesignAssets::class )->register();
 		$this->container->get( CabinetSelectAssets::class )->register();
+		$this->container->get( CabinetGroupAssets::class )->register();
 	}
 }

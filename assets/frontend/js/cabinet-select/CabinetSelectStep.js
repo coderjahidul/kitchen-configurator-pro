@@ -192,6 +192,17 @@ export class CabinetSelectStep {
 	}
 
 	buildCategoryUrl( category ) {
+		const groupUrl = String( category.group_url || '' ).trim();
+		if ( groupUrl ) {
+			return groupUrl;
+		}
+
+		const groupUrls = this.config.category_group_urls || {};
+		const slug = String( category.slug || '' ).trim();
+		if ( slug && groupUrls[ slug ] ) {
+			return String( groupUrls[ slug ] );
+		}
+
 		const base = String( this.config.category_list_url || '' ).trim();
 		if ( ! base ) {
 			return '';
