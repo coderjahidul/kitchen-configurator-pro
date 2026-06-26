@@ -17,6 +17,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
+$record_id = (int) ( $id ?? 0 );
+
 ?>
 <div class="wrap kcp-admin">
 	<h1>
@@ -97,13 +99,21 @@ defined( 'ABSPATH' ) || exit;
 								</select>
 							<?php elseif ( 'image' === $type ) : ?>
 								<?php
-								$name     = $field_key;
-								$id       = $field_id;
-								$modifier = (string) ( $field['modifier'] ?? '' );
+								$name           = $field_key;
+								$image_input_id = $field_id;
+								$id             = $field_id;
+								$modifier       = (string) ( $field['modifier'] ?? '' );
 								require KCP_PLUGIN_DIR . 'templates/admin/partials/image-picker-field.php';
+								$id = $record_id;
 								?>
 							<?php elseif ( 'dimension_pricing' === $type ) : ?>
 								<?php require KCP_PLUGIN_DIR . 'templates/admin/partials/dimension-pricing-field.php'; ?>
+							<?php elseif ( 'cabinet_items' === $type || 'child_cabinets' === $type ) : ?>
+								<?php
+								$cabinet_items = (array) ( $field['cabinet_items'] ?? array() );
+								$cabinet_id    = $record_id;
+								require KCP_PLUGIN_DIR . 'templates/admin/partials/cabinet-items-field.php';
+								?>
 							<?php else : ?>
 								<input
 									type="<?php echo esc_attr( $type ); ?>"

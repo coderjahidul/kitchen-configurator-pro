@@ -34,8 +34,11 @@ final class CabinetRepository extends AbstractRepository {
 	 * {@inheritDoc}
 	 */
 	protected function sanitize( array $data ): array {
+		$type_id = max( 0, (int) ( $data['type_id'] ?? 0 ) );
+
 		$sanitized = array(
 			'category_id'          => (int) ( $data['category_id'] ?? 0 ),
+			'type_id'              => $type_id > 0 ? $type_id : null,
 			'slug'                 => $this->resolve_slug( $data ),
 			'name'                 => sanitize_text_field( (string) ( $data['name'] ?? '' ) ),
 			'description'          => wp_kses_post( (string) ( $data['description'] ?? '' ) ),

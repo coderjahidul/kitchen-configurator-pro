@@ -12,6 +12,7 @@ namespace KitchenConfiguratorPro;
 use KitchenConfiguratorPro\Contracts\PricingCalculatorInterface;
 use KitchenConfiguratorPro\Repositories\AccessoryRepository;
 use KitchenConfiguratorPro\Repositories\CabinetCategoryRepository;
+use KitchenConfiguratorPro\Repositories\CabinetRelationRepository;
 use KitchenConfiguratorPro\Repositories\CabinetRepository;
 use KitchenConfiguratorPro\Repositories\ColorRepository;
 use KitchenConfiguratorPro\Repositories\ConfigurationRepository;
@@ -71,6 +72,7 @@ final class CoreServiceProvider {
 			LayoutRepository::class,
 			CabinetCategoryRepository::class,
 			CabinetRepository::class,
+			CabinetRelationRepository::class,
 			MaterialRepository::class,
 			ColorRepository::class,
 			HandleRepository::class,

@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace KitchenConfiguratorPro\Admin;
 
+use KitchenConfiguratorPro\Admin\Ajax\CabinetSearchAjax;
 use KitchenConfiguratorPro\Admin\Pages\AccessoriesPage;
 use KitchenConfiguratorPro\Admin\Pages\CabinetCategoriesPage;
 use KitchenConfiguratorPro\Admin\Pages\CabinetsPage;
@@ -93,6 +94,13 @@ final class AdminServiceProvider {
 				return new Assets();
 			}
 		);
+
+		$this->container->singleton(
+			CabinetSearchAjax::class,
+			function () {
+				return new CabinetSearchAjax( $this->container );
+			}
+		);
 	}
 
 	/**
@@ -103,5 +111,6 @@ final class AdminServiceProvider {
 	public function boot(): void {
 		add_action( 'admin_menu', array( $this->container->get( Menu::class ), 'register' ) );
 		$this->container->get( Assets::class )->register();
+		$this->container->get( CabinetSearchAjax::class )->register();
 	}
 }

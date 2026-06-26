@@ -49,7 +49,41 @@ final class Assets {
 			true
 		);
 
-		if ( in_array( $hook_suffix, array( 'kitchen-configurator_page_kcp-products', 'kitchen-configurator_page_kcp-settings', 'kitchen-configurator_page_kcp-handles', 'kitchen-configurator_page_kcp-colors', 'kitchen-configurator_page_kcp-cabinets', 'kitchen-configurator_page_kcp-plinths' ), true ) ) {
+		if ( 'kitchen-configurator_page_kcp-cabinets' === $hook_suffix ) {
+			wp_enqueue_media();
+
+			$media_script = KCP_PLUGIN_DIR . 'assets/admin/js/product-preset-media.js';
+
+			wp_enqueue_script(
+				'kcp-product-preset-media',
+				KCP_PLUGIN_URL . 'assets/admin/js/product-preset-media.js',
+				array( 'jquery' ),
+				is_readable( $media_script ) ? (string) filemtime( $media_script ) : KCP_VERSION,
+				true
+			);
+
+			wp_localize_script(
+				'kcp-product-preset-media',
+				'kcpProductPresetMedia',
+				array(
+					'selectTitle'  => __( 'Select image', 'kitchen-configurator-pro' ),
+					'selectButton' => __( 'Use image', 'kitchen-configurator-pro' ),
+					'emptyLabel'   => __( 'No image selected', 'kitchen-configurator-pro' ),
+				)
+			);
+
+			$child_script = KCP_PLUGIN_DIR . 'assets/admin/js/cabinet-items-repeater.js';
+
+			wp_enqueue_script(
+				'kcp-cabinet-items-repeater',
+				KCP_PLUGIN_URL . 'assets/admin/js/cabinet-items-repeater.js',
+				array( 'kcp-product-preset-media' ),
+				is_readable( $child_script ) ? (string) filemtime( $child_script ) : KCP_VERSION,
+				true
+			);
+		}
+
+		if ( in_array( $hook_suffix, array( 'kitchen-configurator_page_kcp-products', 'kitchen-configurator_page_kcp-settings', 'kitchen-configurator_page_kcp-handles', 'kitchen-configurator_page_kcp-colors', 'kitchen-configurator_page_kcp-plinths' ), true ) ) {
 			wp_enqueue_media();
 
 			$media_script = KCP_PLUGIN_DIR . 'assets/admin/js/product-preset-media.js';

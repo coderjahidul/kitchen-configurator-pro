@@ -1,0 +1,174 @@
+/**
+ * Cabinet child-list step — matched to reference hoge-kasten-143cm-hoog page.
+ * Reference: configurator.keukenkastenfabriek.nl/kasten/.../hoge-kasten-143cm-hoog.html
+ */
+
+#kcp-cabinet-list-root.kcp-cabinet-select {
+	width: 100%;
+	min-height: 100vh;
+}
+
+.kcp-cabinet-list__page {
+	position: relative;
+	width: min( 100%, 1320px );
+	margin: 0 auto;
+	padding: 24px clamp( 16px, 4vw, 48px ) 80px;
+}
+
+/* Intro block — back link row */
+.kcp-cabinet-list__intro {
+	position: relative;
+	max-width: none;
+	padding-right: 180px;
+}
+
+.kcp-cabinet-list__page .kcp-cabinet-select__breadcrumbs {
+	margin: 0;
+}
+
+.kcp-cabinet-list__page .kcp-cabinet-select__breadcrumb-list {
+	gap: 0;
+	font-size: 12px;
+	font-weight: 400;
+}
+
+.kcp-cabinet-list__page .kcp-cabinet-select__breadcrumb-list li {
+	display: inline-block;
+}
+
+.kcp-cabinet-list__page .kcp-cabinet-select__breadcrumb-list li + li::before {
+	content: "-";
+	margin: 0 6px;
+}
+
+.kcp-cabinet-list-active .kcp-cabinet-list__page .kcp-cabinet-select__breadcrumb-list a,
+.kcp-cabinet-list-active .kcp-cabinet-list__page .kcp-cabinet-select__breadcrumb-list li {
+	color: var( --kcp-cs-text, #000 );
+}
+
+.kcp-cabinet-list__page .kcp-cabinet-select__link--back {
+	position: absolute;
+	right: 0;
+	top: 0;
+	font-size: 20px;
+	font-weight: 500;
+	text-transform: none;
+}
+
+.kcp-cabinet-list__page .kcp-cabinet-list__header,
+.kcp-cabinet-list__page .kcp-cabinet-group__header {
+	margin: 0;
+	max-width: none;
+}
+
+.kcp-cabinet-list__page .kcp-cabinet-group__title,
+.kcp-cabinet-list__page .kcp-cabinet-select__title {
+	margin: 30px 0;
+	font-size: 45px;
+	font-weight: 500;
+	line-height: 1.1;
+	text-transform: none;
+}
+
+.kcp-cabinet-list__page .kcp-cabinet-group__grid {
+	display: grid;
+	grid-template-columns: repeat( 4, minmax( 0, 1fr ) );
+	gap: 24px 20px;
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	max-width: none;
+	list-style: none;
+}
+
+.kcp-cabinet-list__page .kcp-cabinet-group__item {
+	margin: 0;
+	padding: 0;
+}
+
+.kcp-cabinet-list__page .kcp-cabinet-group__card-media {
+	display: block;
+	min-height: 0;
+	aspect-ratio: 1;
+	padding: 0;
+	border: 2px solid rgba( 164, 157, 147, 0.3 );
+	background: #fff;
+}
+
+.kcp-cabinet-list__page .kcp-cabinet-group__card-media img {
+	width: 100%;
+	max-width: none;
+	height: 100%;
+	object-fit: contain;
+}
+
+.kcp-cabinet-list__page .kcp-cabinet-group__card-media--placeholder {
+	aspect-ratio: 1;
+}
+
+.kcp-cabinet-list__page .kcp-cabinet-group__card-title {
+	margin: 15px 0 0;
+	font-size: 22px;
+	font-weight: 400;
+	line-height: 26px;
+}
+
+.kcp-cabinet-list__page .kcp-cabinet-group__summary {
+	display: none;
+}
+
+/* Full-width configurator canvas inside theme */
+body.kcp-cabinet-list-active .site-content .ast-container,
+body.kcp-cabinet-list-active .site-content .content-area,
+body.kcp-cabinet-list-active .ast-plain-container .site-content,
+body.kcp-cabinet-list-active .ast-separate-container .site-content,
+body.kcp-cabinet-list-active .site-content > .ast-container,
+body.kcp-cabinet-list-active .ast-separate-container .ast-article-single,
+body.kcp-cabinet-list-active .ast-separate-container .site-content {
+	max-width: none;
+	padding-left: 0;
+	padding-right: 0;
+	padding-top: 0;
+	padding-bottom: 0;
+}
+
+body.kcp-cabinet-list-active .entry-content {
+	max-width: none;
+	padding: 0;
+	margin: 0;
+}
+
+@media ( max-width: 1024px ) {
+	.kcp-cabinet-list__page .kcp-cabinet-group__grid {
+		grid-template-columns: repeat( 2, minmax( 0, 1fr ) );
+	}
+}
+
+@media ( max-width: 767px ) {
+	.kcp-cabinet-list__page {
+		padding-bottom: 48px;
+	}
+
+	.kcp-cabinet-list__intro {
+		padding-right: 0;
+	}
+
+	.kcp-cabinet-list__page .kcp-cabinet-select__link--back {
+		position: relative;
+		top: auto;
+		right: auto;
+		margin: 16px 0 0;
+	}
+
+	.kcp-cabinet-list__page .kcp-cabinet-group__title,
+	.kcp-cabinet-list__page .kcp-cabinet-select__title {
+		margin: 20px 0;
+		font-size: clamp( 1.75rem, 6vw, 2.5rem );
+	}
+
+	.kcp-cabinet-list__page .kcp-cabinet-group__grid {
+		grid-template-columns: 1fr;
+		margin: 0;
+		width: 100%;
+	}
+}

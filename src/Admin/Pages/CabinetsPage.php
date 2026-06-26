@@ -11,8 +11,10 @@ namespace KitchenConfiguratorPro\Admin\Pages;
 
 use KitchenConfiguratorPro\Admin\AbstractCrudPage;
 use KitchenConfiguratorPro\Repositories\CabinetCategoryRepository;
+use KitchenConfiguratorPro\Repositories\CabinetRelationRepository;
 use KitchenConfiguratorPro\Repositories\CabinetRepository;
 use KitchenConfiguratorPro\Support\Arr;
+use KitchenConfiguratorPro\Support\Helpers;
 
 /**
  * CRUD admin page for cabinets.
@@ -155,6 +157,253 @@ final class CabinetsPage extends AbstractCrudPage {
 			'image_url'            => array( 'type' => 'image', 'label' => __( 'Image', 'kitchen-configurator-pro' ) ),
 			'sort_order'           => array( 'type' => 'number', 'label' => __( 'Sort Order', 'kitchen-configurator-pro' ), 'default' => 0, 'min' => 0 ),
 			'is_active'            => array( 'type' => 'checkbox', 'label' => __( 'Active', 'kitchen-configurator-pro' ), 'default' => 1 ),
+			'child_cabinets'       => array(
+				'type'        => 'cabinet_items',
+				'label'       => __( 'Cabinet Items', 'kitchen-configurator-pro' ),
+				'description' => __( 'Add items that appear when customers select this cabinet. Use “Add New Item” for each sub-option.', 'kitchen-configurator-pro' ),
+			),
+		);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	protected function handle_post(): void {
+		$cabinet_items = $this->collect_cabinet_items();
+
+		$nonce_action = $this->nonce_action();
+		$nonce        = isset( $_POST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['_wpnonce'] ) ) : '';
+
+		if ( ! wp_verify_nonce( $nonce, $nonce_action ) ) {
+			$this->add_notice( 'error', __( 'Security check failed.', 'kitchen-configurator-pro' ) );
+			return;
+		}
+
+		$action = sanitize_key( wp_unslash( (string) $_POST['kcp_action'] ) );
+		$data   = $this->collect_post_data();
+
+		$validation_error = $this->validate( $data );
+
+		if ( null !== $validation_error ) {
+			$this->add_notice( 'error', $validation_error );
+			return;
+		}
+
+		$repository = $this->repository();
+
+		if ( 'create' === $action ) {
+			$result = $repository->create( $data );
+
+			if ( null === $result ) {
+				$this->add_notice( 'error', __( 'Failed to create record.', 'kitchen-configurator-pro' ) );
+				return;
+			}
+
+			$new_id = (int) ( Arr::to_array( $result )['id'] ?? 0 );
+
+			if ( $new_id > 0 ) {
+				$this->sync_cabinet_items( $new_id, $data, $cabinet_items );
+			}
+
+			if ( $this->invalidates_catalog_cache() ) {
+				Helpers::bump_catalog_cache_version();
+			}
+
+			$this->redirect_with_notice(
+				'created',
+				add_query_arg(
+					array(
+						'page'   => $this->slug(),
+						'action' => 'edit',
+						'id'     => $new_id,
+					),
+					admin_url( 'admin.php' )
+				)
+			);
+		}
+
+		if ( 'update' === $action ) {
+			$id = isset( $_POST['id'] ) ? (int) $_POST['id'] : 0;
+
+			if ( $id <= 0 ) {
+				$this->add_notice( 'error', __( 'Invalid record ID.', 'kitchen-configurator-pro' ) );
+				return;
+			}
+
+			$result = $repository->update( $id, $data );
+
+			if ( null === $result ) {
+				$this->add_notice( 'error', __( 'Failed to update record.', 'kitchen-configurator-pro' ) );
+				return;
+			}
+
+			$this->sync_cabinet_items( $id, $data, $cabinet_items );
+
+			if ( $this->invalidates_catalog_cache() ) {
+				Helpers::bump_catalog_cache_version();
+			}
+
+			$this->redirect_with_notice(
+				'updated',
+				add_query_arg(
+					array(
+						'page'   => $this->slug(),
+						'action' => 'edit',
+						'id'     => $id,
+					),
+					admin_url( 'admin.php' )
+				)
+			);
+		}
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	protected function handle_delete(): void {
+		$id = isset( $_GET['id'] ) ? (int) $_GET['id'] : 0;
+
+		if ( $id > 0 ) {
+			/** @var CabinetRelationRepository $relations */
+			$relations = $this->container->get( CabinetRelationRepository::class );
+
+			foreach ( $relations->get_child_ids( $id ) as $child_id ) {
+				$this->repository()->delete( $child_id );
+			}
+
+			$relations->delete_by_cabinet( $id );
+		}
+
+		parent::handle_delete();
+	}
+
+	/**
+	 * Collect cabinet items from POST data.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function collect_cabinet_items(): array {
+		if ( ! isset( $_POST['cabinet_items'] ) || ! is_array( $_POST['cabinet_items'] ) ) {
+			return array();
+		}
+
+		$items = array();
+
+		foreach ( wp_unslash( $_POST['cabinet_items'] ) as $item ) {
+			if ( ! is_array( $item ) ) {
+				continue;
+			}
+
+			$items[] = array(
+				'id'         => isset( $item['id'] ) ? (int) $item['id'] : 0,
+				'name'       => sanitize_text_field( (string) ( $item['name'] ?? '' ) ),
+				'slug'       => sanitize_title( (string) ( $item['slug'] ?? '' ) ),
+				'image_url'  => esc_url_raw( (string) ( $item['image_url'] ?? '' ) ),
+				'base_price' => is_numeric( $item['base_price'] ?? null ) ? (string) $item['base_price'] : '0',
+				'is_active'  => isset( $item['is_active'] ) ? '1' : '0',
+			);
+		}
+
+		return $items;
+	}
+
+	/**
+	 * Create, update, or remove child cabinet items for a parent.
+	 *
+	 * @param int                          $parent_id     Parent cabinet ID.
+	 * @param array<string, mixed>         $parent_data   Parent cabinet data.
+	 * @param array<int, array<string, mixed>> $items     Submitted item rows.
+	 * @return void
+	 */
+	private function sync_cabinet_items( int $parent_id, array $parent_data, array $items ): void {
+		if ( $parent_id <= 0 ) {
+			return;
+		}
+
+		/** @var CabinetRelationRepository $relations */
+		$relations = $this->container->get( CabinetRelationRepository::class );
+		/** @var CabinetRepository $repository */
+		$repository   = $this->repository();
+		$existing_ids = $relations->get_child_ids( $parent_id );
+		$kept_ids     = array();
+		$sort_order   = 0;
+
+		foreach ( $items as $item ) {
+			$name = trim( (string) ( $item['name'] ?? '' ) );
+
+			if ( '' === $name ) {
+				continue;
+			}
+
+			$child_id   = (int) ( $item['id'] ?? 0 );
+			$child_data = $this->build_child_item_data( $parent_data, $item, $sort_order );
+			++$sort_order;
+
+			if ( $child_id > 0 && in_array( $child_id, $existing_ids, true ) ) {
+				$updated = $repository->update( $child_id, $child_data );
+
+				if ( null !== $updated ) {
+					$kept_ids[] = $child_id;
+				}
+
+				continue;
+			}
+
+			$created = $repository->create( $child_data );
+
+			if ( null === $created ) {
+				continue;
+			}
+
+			$kept_ids[] = (int) ( Arr::to_array( $created )['id'] ?? 0 );
+		}
+
+		$kept_ids = array_values( array_filter( array_unique( $kept_ids ) ) );
+		$relations->sync_children( $parent_id, $kept_ids );
+
+		foreach ( array_diff( $existing_ids, $kept_ids ) as $removed_id ) {
+			$repository->delete( (int) $removed_id );
+		}
+	}
+
+	/**
+	 * Build cabinet row data for a child item from parent defaults.
+	 *
+	 * @param array<string, mixed> $parent_data Parent cabinet data.
+	 * @param array<string, mixed> $item        Item row data.
+	 * @param int                  $sort_order  Sort order.
+	 * @return array<string, mixed>
+	 */
+	private function build_child_item_data( array $parent_data, array $item, int $sort_order ): array {
+		$base_price = (string) ( $item['base_price'] ?? '' );
+
+		if ( ! is_numeric( $base_price ) || (float) $base_price <= 0 ) {
+			$base_price = (string) ( $parent_data['base_price'] ?? '0' );
+		}
+
+		return array(
+			'category_id'          => (int) ( $parent_data['category_id'] ?? 0 ),
+			'name'                 => (string) ( $item['name'] ?? '' ),
+			'slug'                 => (string) ( $item['slug'] ?? '' ),
+			'description'          => '',
+			'sku_prefix'           => (string) ( $parent_data['sku_prefix'] ?? '' ),
+			'default_width'        => (int) ( $parent_data['default_width'] ?? 0 ),
+			'default_height'       => (int) ( $parent_data['default_height'] ?? 0 ),
+			'default_depth'        => (int) ( $parent_data['default_depth'] ?? 0 ),
+			'min_width'            => (int) ( $parent_data['min_width'] ?? 0 ),
+			'max_width'            => (int) ( $parent_data['max_width'] ?? 0 ),
+			'min_height'           => (int) ( $parent_data['min_height'] ?? 0 ),
+			'max_height'           => (int) ( $parent_data['max_height'] ?? 0 ),
+			'min_depth'            => (int) ( $parent_data['min_depth'] ?? 0 ),
+			'max_depth'            => (int) ( $parent_data['max_depth'] ?? 0 ),
+			'width_step'           => (int) ( $parent_data['width_step'] ?? 10 ),
+			'height_step'          => (int) ( $parent_data['height_step'] ?? 10 ),
+			'depth_step'           => (int) ( $parent_data['depth_step'] ?? 10 ),
+			'base_price'           => $base_price,
+			'dimension_price_json' => (string) ( $parent_data['dimension_price_json'] ?? '' ),
+			'image_url'            => (string) ( $item['image_url'] ?? '' ),
+			'sort_order'           => $sort_order,
+			'is_active'            => (string) ( $item['is_active'] ?? '1' ),
 		);
 	}
 
@@ -219,10 +468,81 @@ final class CabinetsPage extends AbstractCrudPage {
 			$options[ (string) $row['id'] ] = (string) $row['name'];
 		}
 
+		$cabinet_id = (int) ( $values['id'] ?? 0 );
+
 		$fields = $this->form_fields();
 		$fields['category_id']['options'] = $options;
 
+		/** @var CabinetRelationRepository $relations */
+		$relations = $this->container->get( CabinetRelationRepository::class );
+		$fields['child_cabinets']['cabinet_items'] = $this->resolve_cabinet_items( $cabinet_id, $values );
+
 		return array( 'fields' => $fields );
+	}
+
+	/**
+	 * Load item rows assigned to a parent cabinet.
+	 *
+	 * @param int                 $parent_id Parent cabinet ID.
+	 * @param array<string,mixed> $parent    Parent cabinet values.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function resolve_cabinet_items( int $parent_id, array $parent = array() ): array {
+		if ( $parent_id <= 0 ) {
+			return array();
+		}
+
+		/** @var CabinetRelationRepository $relations */
+		$relations = $this->container->get( CabinetRelationRepository::class );
+		$items     = array();
+
+		foreach ( $relations->get_children_for_admin( $parent_id ) as $cabinet ) {
+			$row = Arr::to_array( $cabinet );
+
+			$items[] = array(
+				'id'         => (int) ( $row['id'] ?? 0 ),
+				'name'       => (string) ( $row['name'] ?? '' ),
+				'slug'       => (string) ( $row['slug'] ?? '' ),
+				'image_url'  => (string) ( $row['image_url'] ?? '' ),
+				'base_price' => (string) ( $row['base_price'] ?? ( $parent['base_price'] ?? '0' ) ),
+				'is_active'  => ! empty( $row['is_active'] ),
+			);
+		}
+
+		return $items;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	protected function render_list(): void {
+		/** @var CabinetRelationRepository $relations */
+		$relations = $this->container->get( CabinetRelationRepository::class );
+		$child_ids = $relations->get_all_child_cabinet_ids();
+
+		$items = array_values(
+			array_filter(
+				$this->repository()->find_all(),
+				static function ( $cabinet ) use ( $child_ids ): bool {
+					$row = Arr::to_array( $cabinet );
+					$id  = (int) ( $row['id'] ?? 0 );
+
+					return $id > 0 && ! in_array( $id, $child_ids, true );
+				}
+			)
+		);
+
+		$this->load_template(
+			'crud-list',
+			array(
+				'page'         => $this,
+				'items'        => $items,
+				'columns'      => $this->list_columns(),
+				'notices'      => $this->resolve_notices(),
+				'add_url'      => $this->form_url(),
+				'entity_label' => $this->entity_label(),
+			)
+		);
 	}
 
 	/**
@@ -251,6 +571,10 @@ final class CabinetsPage extends AbstractCrudPage {
 		$fields = $this->form_fields();
 		$context = $this->form_context( $values );
 		$fields  = $context['fields'] ?? $fields;
+
+		if ( ! $is_edit ) {
+			unset( $fields['child_cabinets'] );
+		}
 
 		foreach ( $fields as $key => $field ) {
 			if ( ! isset( $values[ $key ] ) && isset( $field['default'] ) ) {

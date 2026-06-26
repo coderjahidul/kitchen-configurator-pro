@@ -59,6 +59,31 @@ final class FrontendServiceProvider {
 		);
 
 		$this->container->singleton(
+			CabinetListShortcode::class,
+			static fn () => new CabinetListShortcode()
+		);
+
+		$this->container->singleton(
+			CabinetDetailShortcode::class,
+			static fn () => new CabinetDetailShortcode()
+		);
+
+		$this->container->singleton(
+			CabinetRouter::class,
+			static fn () => new CabinetRouter()
+		);
+
+		$this->container->singleton(
+			CabinetListAssets::class,
+			static fn () => new CabinetListAssets()
+		);
+
+		$this->container->singleton(
+			CabinetDetailAssets::class,
+			static fn () => new CabinetDetailAssets()
+		);
+
+		$this->container->singleton(
 			CabinetGroupAssets::class,
 			static fn () => new CabinetGroupAssets()
 		);
@@ -89,9 +114,14 @@ final class FrontendServiceProvider {
 		$this->container->get( DesignShortcode::class )->register();
 		$this->container->get( CabinetSelectShortcode::class )->register();
 		$this->container->get( CabinetGroupShortcode::class )->register();
+		$this->container->get( CabinetListShortcode::class )->register();
+		$this->container->get( CabinetDetailShortcode::class )->register();
+		$this->container->get( CabinetRouter::class )->register();
 		$this->container->get( Assets::class )->register();
 		$this->container->get( DesignAssets::class )->register();
 		$this->container->get( CabinetSelectAssets::class )->register();
 		$this->container->get( CabinetGroupAssets::class )->register();
+		$this->container->get( CabinetListAssets::class )->register();
+		$this->container->get( CabinetDetailAssets::class )->register();
 	}
 }

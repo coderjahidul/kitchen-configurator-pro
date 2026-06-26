@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace KitchenConfiguratorPro\Services;
 
 use KitchenConfiguratorPro\Repositories\CabinetCategoryRepository;
+use KitchenConfiguratorPro\Repositories\CabinetRelationRepository;
 use KitchenConfiguratorPro\Repositories\CabinetRepository;
 use KitchenConfiguratorPro\Support\Arr;
 
@@ -228,6 +229,9 @@ final class CabinetGroupStepService {
 
 		/** @var CabinetRepository $repo */
 		$repo  = kcp_plugin()->container()->get( CabinetRepository::class );
+		/** @var CabinetRelationRepository $relations */
+		$relations = kcp_plugin()->container()->get( CabinetRelationRepository::class );
+		$child_ids = $relations->get_all_child_cabinet_ids();
 		$items = array();
 
 		foreach (
@@ -239,18 +243,24 @@ final class CabinetGroupStepService {
 			) as $cabinet
 		) {
 			$row = Arr::to_array( $cabinet );
+			$cabinet_id = (int) ( $row['id'] ?? 0 );
+			$cabinet_slug = (string) ( $row['slug'] ?? '' );
+
+			if ( $cabinet_id <= 0 || in_array( $cabinet_id, $child_ids, true ) ) {
+				continue;
+			}
+
+			$has_children = $relations->has_children( $cabinet_id );
 
 			$items[] = array(
-				'id'        => (int) ( $row['id'] ?? 0 ),
-				'slug'      => (string) ( $row['slug'] ?? '' ),
-				'name'      => (string) ( $row['name'] ?? '' ),
-				'image_url' => (string) ( $row['image_url'] ?? '' ),
-				'url'       => self::build_item_url(
-					$shop_url,
-					$category_slug,
-					(string) ( $row['slug'] ?? '' ),
-					(int) ( $row['id'] ?? 0 )
-				),
+				'id'           => $cabinet_id,
+				'slug'         => $cabinet_slug,
+				'name'         => (string) ( $row['name'] ?? '' ),
+				'image_url'    => (string) ( $row['image_url'] ?? '' ),
+				'has_children' => $has_children,
+				'url'          => $has_children
+					? CabinetListStepService::resolve_child_list_url( $category_slug, $cabinet_slug )
+					: self::build_item_url( $shop_url, $category_slug, $cabinet_slug, $cabinet_id ),
 			);
 		}
 

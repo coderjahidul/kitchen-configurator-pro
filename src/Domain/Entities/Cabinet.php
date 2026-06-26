@@ -17,6 +17,7 @@ final class Cabinet {
 	/**
 	 * @param int    $id                   Primary key.
 	 * @param int    $category_id          Category ID.
+	 * @param int    $type_id              Cabinet type ID.
 	 * @param string $slug                 URL slug.
 	 * @param string $name                 Display name.
 	 * @param string $description          Description.
@@ -42,6 +43,7 @@ final class Cabinet {
 	public function __construct(
 		public readonly int $id,
 		public readonly int $category_id,
+		public readonly int $type_id,
 		public readonly string $slug,
 		public readonly string $name,
 		public readonly string $description,
@@ -76,6 +78,7 @@ final class Cabinet {
 		return new self(
 			(int) $row['id'],
 			(int) $row['category_id'],
+			(int) ( $row['type_id'] ?? 0 ),
 			(string) $row['slug'],
 			(string) $row['name'],
 			(string) ( $row['description'] ?? '' ),
@@ -109,6 +112,7 @@ final class Cabinet {
 		return array(
 			'id'                   => $this->id,
 			'category_id'          => $this->category_id,
+			'type_id'              => $this->type_id,
 			'slug'                 => $this->slug,
 			'name'                 => $this->name,
 			'description'          => $this->description,

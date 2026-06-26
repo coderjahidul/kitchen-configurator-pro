@@ -125,10 +125,10 @@ final class RestInputValidator {
 			return true;
 		}
 
-		if ( ! is_array( $value ) ) {
+		if ( ! is_array( $value ) && ! is_object( $value ) ) {
 			return new \WP_Error(
 				'kcp_invalid_global_options',
-				__( 'Global options must be an array.', 'kitchen-configurator-pro' ),
+				__( 'Global options must be an object.', 'kitchen-configurator-pro' ),
 				array( 'status' => 400 )
 			);
 		}
@@ -229,8 +229,9 @@ final class RestInputValidator {
 				'validate_callback' => array( self::class, 'validate_cabinets' ),
 			),
 			'global_options' => array(
-				'type'              => 'array',
-				'validate_callback' => array( self::class, 'validate_global_options' ),
+				'type'                 => 'object',
+				'additionalProperties' => true,
+				'validate_callback'    => array( self::class, 'validate_global_options' ),
 			),
 		);
 

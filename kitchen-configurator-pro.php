@@ -23,7 +23,7 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 define( 'KCP_VERSION', '1.0.0' );
-define( 'KCP_DB_VERSION', '1.3.0' );
+define( 'KCP_DB_VERSION', '1.7.1' );
 define( 'KCP_PLUGIN_FILE', __FILE__ );
 define( 'KCP_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'KCP_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
