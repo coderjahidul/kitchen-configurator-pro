@@ -137,6 +137,28 @@ final class RestInputValidator {
 	}
 
 	/**
+	 * Validate cart quantity.
+	 *
+	 * @param mixed             $value   Value.
+	 * @param \WP_REST_Request  $request Request.
+	 * @param string            $param   Parameter name.
+	 * @return bool|\WP_Error
+	 */
+	public static function validate_quantity( mixed $value, \WP_REST_Request $request, string $param ): bool|\WP_Error {
+		unset( $request, $param );
+
+		if ( ! is_numeric( $value ) || (int) $value < 1 || (int) $value > 999 ) {
+			return new \WP_Error(
+				'kcp_invalid_quantity',
+				__( 'Quantity must be between 1 and 999.', 'kitchen-configurator-pro' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		return true;
+	}
+
+	/**
 	 * Validate configuration UUID.
 	 *
 	 * @param mixed             $value   Value.

@@ -61,6 +61,27 @@ final class ConfigurationHistoryRepository extends AbstractRepository {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * History rows only track created_at (no updated_at column).
+	 */
+	public function create( array $data ): mixed {
+		$data = $this->sanitize( $data );
+
+		if ( empty( $data['created_at'] ) ) {
+			$data['created_at'] = \KitchenConfiguratorPro\Support\Helpers::now();
+		}
+
+		$result = $this->db->insert( $this->table_name(), $data );
+
+		if ( false === $result ) {
+			return null;
+		}
+
+		return $this->find( (int) $this->db->insert_id );
+	}
+
+	/**
+	 * {@inheritDoc}
 	 */
 	protected function sanitize( array $data ): array {
 		return array(

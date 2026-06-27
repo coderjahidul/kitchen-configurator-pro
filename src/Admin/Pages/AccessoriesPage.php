@@ -68,7 +68,7 @@ final class AccessoriesPage extends AbstractCrudPage {
 			'description'    => array( 'type' => 'textarea', 'label' => __( 'Description', 'kitchen-configurator-pro' ), 'rows' => 3 ),
 			'price'          => array( 'type' => 'number', 'label' => __( 'Price', 'kitchen-configurator-pro' ), 'step' => '0.01', 'default' => 0 ),
 			'is_per_cabinet' => array( 'type' => 'checkbox', 'label' => __( 'Per Cabinet', 'kitchen-configurator-pro' ), 'default' => 1, 'checkbox_label' => __( 'Price applies per cabinet', 'kitchen-configurator-pro' ) ),
-			'thumbnail_url'  => array( 'type' => 'url', 'label' => __( 'Thumbnail URL', 'kitchen-configurator-pro' ) ),
+			'thumbnail_url'  => array( 'type' => 'image', 'label' => __( 'Thumbnail', 'kitchen-configurator-pro' ) ),
 			'sort_order'     => array( 'type' => 'number', 'label' => __( 'Sort Order', 'kitchen-configurator-pro' ), 'default' => 0, 'min' => 0 ),
 			'is_active'      => array( 'type' => 'checkbox', 'label' => __( 'Active', 'kitchen-configurator-pro' ), 'default' => 1 ),
 		);

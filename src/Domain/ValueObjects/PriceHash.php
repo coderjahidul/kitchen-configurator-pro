@@ -51,6 +51,38 @@ final class PriceHash {
 	}
 
 	/**
+	 * Normalize hash for storage or comparison (64-char hex without prefix).
+	 *
+	 * @param string $hash Stored or generated hash.
+	 * @return string
+	 */
+	public static function normalize_for_compare( string $hash ): string {
+		return str_starts_with( $hash, 'sha256:' ) ? substr( $hash, 7 ) : $hash;
+	}
+
+	/**
+	 * Compare against another hash string.
+	 *
+	 * @param string $other Other hash value.
+	 * @return bool
+	 */
+	public function matches_string( string $other ): bool {
+		return hash_equals(
+			self::normalize_for_compare( $this->value ),
+			self::normalize_for_compare( $other )
+		);
+	}
+
+	/**
+	 * Hash value for database storage.
+	 *
+	 * @return string
+	 */
+	public function to_storage_string(): string {
+		return self::normalize_for_compare( $this->value );
+	}
+
+	/**
 	 * Convert to string.
 	 *
 	 * @return string

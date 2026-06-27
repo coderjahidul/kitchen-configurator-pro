@@ -314,6 +314,28 @@
 	opacity: 1;
 }
 
+.kcp-cabinet-detail__cta:not(:disabled) {
+	cursor: pointer;
+}
+
+.kcp-cabinet-detail__cart-message {
+	margin: 12px 0 0;
+	font-size: 16px;
+	line-height: 1.4;
+}
+
+.kcp-cabinet-detail__cart-message--success {
+	color: #1b7f3b;
+}
+
+.kcp-cabinet-detail__cart-message--error {
+	color: #b42318;
+}
+
+.kcp-cabinet-detail__cart-message[hidden] {
+	display: none;
+}
+
 body.kcp-cabinet-detail-active .site-content .ast-container,
 body.kcp-cabinet-detail-active .site-content .content-area,
 body.kcp-cabinet-detail-active .ast-plain-container .site-content,

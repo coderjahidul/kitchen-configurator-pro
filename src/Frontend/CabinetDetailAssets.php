@@ -55,15 +55,26 @@ final class CabinetDetailAssets {
 			);
 		}
 
+		$detail_js = KCP_PLUGIN_DIR . 'assets/frontend/js/cabinet-detail/CabinetDetailStep.js';
+		$main_js   = KCP_PLUGIN_DIR . 'assets/frontend/js/cabinet-detail/main.js';
+		$version   = (string) max(
+			is_readable( $main_js ) ? (int) filemtime( $main_js ) : 0,
+			is_readable( $detail_js ) ? (int) filemtime( $detail_js ) : 0
+		);
+
 		wp_enqueue_script(
 			'kcp-cabinet-detail',
 			KCP_PLUGIN_URL . 'assets/frontend/js/cabinet-detail/main.js',
 			array(),
-			(string) filemtime( KCP_PLUGIN_DIR . 'assets/frontend/js/cabinet-detail/main.js' ),
+			$version,
 			true
 		);
 
 		wp_script_add_data( 'kcp-cabinet-detail', 'type', 'module' );
+
+		if ( class_exists( 'WooCommerce' ) ) {
+			wp_enqueue_script( 'wc-cart-fragments' );
+		}
 
 		wp_localize_script(
 			'kcp-cabinet-detail',

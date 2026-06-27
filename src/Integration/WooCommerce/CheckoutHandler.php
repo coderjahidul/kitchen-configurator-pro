@@ -142,7 +142,7 @@ final class CheckoutHandler {
 			return false;
 		}
 
-		if ( ! hash_equals( $snapshot->price_hash->to_string(), $stored_hash ) ) {
+		if ( ! $snapshot->price_hash->matches_string( $stored_hash ) ) {
 			return false;
 		}
 

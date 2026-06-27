@@ -191,10 +191,18 @@ final class CartHandler {
 		unset( $cart_key );
 
 		if ( ! empty( $cart_item[ self::META_TITLE ] ) ) {
+			$config        = json_decode( (string) ( $cart_item[ self::META_CONFIG ] ?? '{}' ), true );
+			$cabinet_count = is_array( $config['cabinets'] ?? null ) ? count( $config['cabinets'] ) : 0;
+			$title         = (string) $cart_item[ self::META_TITLE ];
+
+			if ( 1 === $cabinet_count ) {
+				return esc_html( $title );
+			}
+
 			return sprintf(
 				/* translators: %s: configuration title */
 				__( 'Kitchen: %s', 'kitchen-configurator-pro' ),
-				(string) $cart_item[ self::META_TITLE ]
+				$title
 			);
 		}
 

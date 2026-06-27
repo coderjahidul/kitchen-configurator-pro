@@ -70,7 +70,7 @@ final class ConfigurationService {
 			'configuration_json'    => wp_json_encode( $input->to_array(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) ?: '{}',
 			'pricing_snapshot_json' => $snapshot->to_json(),
 			'total_price'           => $snapshot->total->amount,
-			'price_hash'            => $snapshot->price_hash->to_string(),
+			'price_hash'            => $snapshot->price_hash->to_storage_string(),
 			'status'                => 'saved',
 		);
 
@@ -126,7 +126,7 @@ final class ConfigurationService {
 				'configuration_json'    => wp_json_encode( $input->to_array(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) ?: '{}',
 				'pricing_snapshot_json' => $snapshot->to_json(),
 				'total_price'           => $snapshot->total->amount,
-				'price_hash'            => $snapshot->price_hash->to_string(),
+				'price_hash'            => $snapshot->price_hash->to_storage_string(),
 				'status'                => 'saved',
 			)
 		);
@@ -286,7 +286,7 @@ final class ConfigurationService {
 			array(
 				'pricing_snapshot_json' => $snapshot->to_json(),
 				'total_price'           => $snapshot->total->amount,
-				'price_hash'            => $snapshot->price_hash->to_string(),
+				'price_hash'            => $snapshot->price_hash->to_storage_string(),
 				'status'                => 'saved',
 			)
 		);

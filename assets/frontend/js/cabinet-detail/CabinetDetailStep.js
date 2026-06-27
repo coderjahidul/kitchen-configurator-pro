@@ -15,6 +15,9 @@ export class CabinetDetailStep {
 		this.selections = this.buildInitialSelections( config );
 		this.displayPrice = Number( config.display_price ?? config.base_price ?? 0 );
 		this.pricingRequestId = 0;
+		this.cartAdding = false;
+		this.cartMessage = '';
+		this.cartError = '';
 	}
 
 	buildInitialSelections( config ) {
@@ -64,6 +67,172 @@ export class CabinetDetailStep {
 		return `${ amount.toLocaleString( 'nl-NL', { minimumFractionDigits: 0, maximumFractionDigits: 0 } ) },-`;
 	}
 
+	canAddToCart() {
+		if ( ! this.config.cart_enabled ) {
+			return false;
+		}
+
+		if ( this.cartAdding ) {
+			return false;
+		}
+
+		return (
+			Number( this.config.cabinet_id || 0 ) > 0
+			&& Number( this.config.layout_id || 0 ) > 0
+			&& Number( this.selections.width || 0 ) > 0
+			&& Number( this.selections.height || 0 ) > 0
+			&& Number( this.selections.depth || 0 ) > 0
+		);
+	}
+
+	updateCartButtonState() {
+		const button = this.root.querySelector( '[data-kcp-add-to-cart]' );
+
+		if ( ! button ) {
+			return;
+		}
+
+		const enabled = this.canAddToCart();
+		button.disabled = ! enabled;
+		button.setAttribute( 'aria-disabled', enabled ? 'false' : 'true' );
+		button.textContent = this.cartAdding
+			? this.label( 'adding_to_cart', 'Toevoegen…' )
+			: this.label( 'add_to_cart', 'Voeg toe aan winkelwagen' );
+	}
+
+	updateCartFeedback() {
+		const successEl = this.root.querySelector( '[data-kcp-cart-success]' );
+		const errorEl = this.root.querySelector( '[data-kcp-cart-error]' );
+
+		if ( successEl ) {
+			successEl.textContent = this.cartMessage;
+			successEl.hidden = '' === this.cartMessage;
+		}
+
+		if ( errorEl ) {
+			errorEl.textContent = this.cartError;
+			errorEl.hidden = '' === this.cartError;
+		}
+	}
+
+	buildConfigurationPayload() {
+		const cabinetId = Number( this.config.cabinet_id || 0 );
+
+		if ( cabinetId <= 0 ) {
+			return null;
+		}
+
+		const globalOptions = {};
+		const plinthHeight = Number( this.selections.plinth || 0 );
+
+		if ( plinthHeight > 0 ) {
+			globalOptions.plinth_height = plinthHeight;
+		}
+
+		return {
+			schema_version: '1.0',
+			layout_id: Number( this.config.layout_id || 0 ),
+			title: String( this.config.heading || '' ).trim(),
+			cabinets: [
+				{
+					cabinet_id: cabinetId,
+					dimensions: {
+						width: Number( this.selections.width || 0 ),
+						height: Number( this.selections.height || 0 ),
+						depth: Number( this.selections.depth || 0 ),
+					},
+					accessories: [ ...this.selections.upsells ],
+				},
+			],
+			...( Object.keys( globalOptions ).length ? { global_options: globalOptions } : {} ),
+		};
+	}
+
+	async refreshWooCartFragments() {
+		if ( typeof window.jQuery !== 'undefined' ) {
+			window.jQuery( document.body ).trigger( 'wc_fragment_refresh' );
+			return;
+		}
+
+		const ajaxUrl = window.wc_cart_fragments_params?.wc_ajax_url;
+
+		if ( ! ajaxUrl ) {
+			return;
+		}
+
+		try {
+			const response = await fetch(
+				String( ajaxUrl ).replace( '%%endpoint%%', 'get_refreshed_fragments' ),
+				{ credentials: 'same-origin' }
+			);
+			const data = await response.json();
+
+			if ( ! data?.fragments ) {
+				return;
+			}
+
+			Object.entries( data.fragments ).forEach( ( [ selector, html ] ) => {
+				document.querySelectorAll( selector ).forEach( ( node ) => {
+					const template = document.createElement( 'div' );
+					template.innerHTML = String( html );
+					const replacement = template.firstElementChild;
+
+					if ( replacement ) {
+						node.replaceWith( replacement );
+					}
+				} );
+			} );
+		} catch ( error ) {
+			// Fragment refresh is best-effort; cart add already succeeded.
+		}
+	}
+
+	async addToCart() {
+		if ( ! this.canAddToCart() ) {
+			return;
+		}
+
+		const payload = this.buildConfigurationPayload();
+
+		if ( ! payload ) {
+			this.cartError = this.label( 'cart_error', 'Kon product niet toevoegen aan winkelwagen. Probeer het opnieuw.' );
+			this.updateCartFeedback();
+			return;
+		}
+
+		this.cartAdding = true;
+		this.cartMessage = '';
+		this.cartError = '';
+		this.updateCartButtonState();
+		this.updateCartFeedback();
+
+		try {
+			const { data } = await this.api.createConfiguration( payload );
+			const uuid = String( data?.uuid || '' ).trim();
+
+			if ( ! uuid ) {
+				throw new Error( this.label( 'cart_error', 'Kon product niet toevoegen aan winkelwagen. Probeer het opnieuw.' ) );
+			}
+
+			const { meta } = await this.api.addToCart( uuid, this.selections.quantity );
+			const redirect = String( meta?.redirect || '' ).trim();
+
+			if ( redirect && this.config.cart_redirect ) {
+				window.location.href = redirect;
+				return;
+			}
+
+			await this.refreshWooCartFragments();
+			this.cartMessage = this.label( 'cart_success', 'Product toegevoegd aan je winkelwagen.' );
+		} catch ( error ) {
+			this.cartError = error?.message || this.label( 'cart_error', 'Kon product niet toevoegen aan winkelwagen. Probeer het opnieuw.' );
+		} finally {
+			this.cartAdding = false;
+			this.updateCartButtonState();
+			this.updateCartFeedback();
+		}
+	}
+
 	bindEvents() {
 		if ( this.eventsBound ) {
 			return;
@@ -72,6 +241,14 @@ export class CabinetDetailStep {
 		this.eventsBound = true;
 
 		this.root.addEventListener( 'click', ( event ) => {
+			const addToCart = event.target.closest( '[data-kcp-add-to-cart]' );
+
+			if ( addToCart ) {
+				event.preventDefault();
+				this.addToCart();
+				return;
+			}
+
 			const dec = event.target.closest( '[data-kcp-qty-dec]' );
 			const inc = event.target.closest( '[data-kcp-qty-inc]' );
 
@@ -100,6 +277,7 @@ export class CabinetDetailStep {
 				const axis = target.dataset.kcpDimension;
 				this.selections[ axis ] = Number( target.value || 0 );
 				this.refreshPrice();
+				this.updateCartButtonState();
 				return;
 			}
 
@@ -317,7 +495,7 @@ export class CabinetDetailStep {
 		const productInfo = Array.isArray( config.product_info ) ? config.product_info : [];
 		const upsells = Array.isArray( config.upsells ) ? config.upsells : [];
 		const backUrl = String( config.back_url || '' ).trim();
-		const cartEnabled = Boolean( config.cart_enabled );
+		const ctaDisabled = ! this.canAddToCart();
 
 		this.root.innerHTML = `
 			<div class="kcp-cabinet-detail__page">
@@ -367,9 +545,11 @@ export class CabinetDetailStep {
 								</div>
 
 								<div class="kcp-cabinet-detail__actions">
-									<button type="button" class="kcp-cabinet-detail__cta"${ cartEnabled ? '' : ' disabled aria-disabled="true"' }>
-										${ escapeHtml( this.label( 'add_to_cart', 'Voeg toe aan winkelwagen' ) ) }
+									<button type="button" class="kcp-cabinet-detail__cta" data-kcp-add-to-cart${ ctaDisabled ? ' disabled' : '' }${ ctaDisabled ? ' aria-disabled="true"' : '' }>
+										${ escapeHtml( this.cartAdding ? this.label( 'adding_to_cart', 'Toevoegen…' ) : this.label( 'add_to_cart', 'Voeg toe aan winkelwagen' ) ) }
 									</button>
+									<p class="kcp-cabinet-detail__cart-message kcp-cabinet-detail__cart-message--success" data-kcp-cart-success role="status"${ this.cartMessage ? '' : ' hidden' }>${ escapeHtml( this.cartMessage ) }</p>
+									<p class="kcp-cabinet-detail__cart-message kcp-cabinet-detail__cart-message--error" data-kcp-cart-error role="alert"${ this.cartError ? '' : ' hidden' }>${ escapeHtml( this.cartError ) }</p>
 								</div>
 							</div>
 						</div>
@@ -377,5 +557,7 @@ export class CabinetDetailStep {
 				</div>
 			</div>
 		`;
+
+		this.updateCartButtonState();
 	}
 }

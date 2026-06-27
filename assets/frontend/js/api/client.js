@@ -163,12 +163,16 @@ export class KcpApi {
 
 	/**
 	 * @param {string} uuid Configuration UUID.
+	 * @param {number} quantity Line item quantity.
 	 * @returns {Promise<object>}
 	 */
-	addToCart( uuid ) {
+	addToCart( uuid, quantity = 1 ) {
 		return this.request( '/cart/add', {
 			method: 'POST',
-			body: JSON.stringify( { uuid } ),
+			body: JSON.stringify( {
+				uuid,
+				quantity: Math.max( 1, Number( quantity ) || 1 ),
+			} ),
 		} );
 	}
 }

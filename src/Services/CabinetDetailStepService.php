@@ -82,14 +82,18 @@ final class CabinetDetailStepService {
 		$dimensions  = self::resolve_dimensions( $cabinet );
 		$plinth      = self::resolve_plinth_field( $defaults );
 		$base_price  = is_array( $cabinet ) ? (float) ( $cabinet['base_price'] ?? 0 ) : 0.0;
+		$cabinet_id  = is_array( $cabinet ) ? (int) ( $cabinet['id'] ?? 0 ) : 0;
+		$layout_id   = self::resolve_layout_id();
+		$woo_active  = class_exists( 'WooCommerce' );
+		$cart_ready  = $woo_active && $cabinet_id > 0 && $layout_id > 0;
 
 		return array(
 			'category_slug'       => $category_slug,
 			'parent_cabinet_slug' => $parent_cabinet_slug,
 			'parent_cabinet_id'   => is_array( $parent ) ? (int) ( $parent['id'] ?? 0 ) : 0,
 			'cabinet_slug'        => $cabinet_slug,
-			'cabinet_id'          => is_array( $cabinet ) ? (int) ( $cabinet['id'] ?? 0 ) : 0,
-			'layout_id'           => self::resolve_layout_id(),
+			'cabinet_id'          => $cabinet_id,
+			'layout_id'           => $layout_id,
 			'heading'             => $heading,
 			'images'              => self::resolve_images( $cabinet ),
 			'product_info'        => self::parse_product_info( is_array( $cabinet ) ? (string) ( $cabinet['description'] ?? '' ) : '' ),
@@ -103,7 +107,9 @@ final class CabinetDetailStepService {
 			'back_url'            => $list_url,
 			'back_label'          => (string) ( $defaults['back_label'] ?? '' ),
 			'cart_url'            => function_exists( 'wc_get_cart_url' ) ? wc_get_cart_url() : home_url( '/cart/' ),
-			'cart_enabled'        => false,
+			'cart_enabled'        => $cart_ready,
+			'cart_redirect'       => 'yes' === get_option( 'woocommerce_cart_redirect_after_add', 'no' ),
+			'woocommerce_active'  => $woo_active,
 			'labels'              => self::labels(),
 			'api'                 => self::resolve_api_config(),
 			'selections'          => array(
@@ -132,6 +138,9 @@ final class CabinetDetailStepService {
 			'select_quantity'  => __( 'Selecteer aantal', 'kitchen-configurator-pro' ),
 			'per_unit'         => __( 'per stuk', 'kitchen-configurator-pro' ),
 			'add_to_cart'      => __( 'Voeg toe aan winkelwagen', 'kitchen-configurator-pro' ),
+			'adding_to_cart'   => __( 'Toevoegen…', 'kitchen-configurator-pro' ),
+			'cart_success'     => __( 'Product toegevoegd aan je winkelwagen.', 'kitchen-configurator-pro' ),
+			'cart_error'       => __( 'Kon product niet toevoegen aan winkelwagen. Probeer het opnieuw.', 'kitchen-configurator-pro' ),
 			'decrease_qty'     => __( 'Minder', 'kitchen-configurator-pro' ),
 			'increase_qty'     => __( 'Meer', 'kitchen-configurator-pro' ),
 			'quantity'         => __( 'Aantal', 'kitchen-configurator-pro' ),

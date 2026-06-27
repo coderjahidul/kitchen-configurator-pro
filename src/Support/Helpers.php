@@ -48,6 +48,7 @@ final class Helpers {
 			\KitchenConfiguratorPro\Database\Migrations\Migration_1_3_0::class,
 			\KitchenConfiguratorPro\Database\Migrations\Migration_1_7_0::class,
 			\KitchenConfiguratorPro\Database\Migrations\Migration_1_7_1::class,
+			\KitchenConfiguratorPro\Database\Migrations\Migration_1_7_2::class,
 		);
 	}
 

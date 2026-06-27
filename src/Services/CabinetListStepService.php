@@ -205,6 +205,40 @@ final class CabinetListStepService {
 	}
 
 	/**
+	 * Resolve permalink for a leaf cabinet detail page from its database ID.
+	 */
+	public static function resolve_detail_url_for_cabinet( int $cabinet_id ): string {
+		if ( $cabinet_id <= 0 || ! function_exists( 'kcp_plugin' ) ) {
+			return '';
+		}
+
+		$container  = kcp_plugin()->container();
+		$cabinets   = $container->get( CabinetRepository::class );
+		$cabinet    = $cabinets->find( $cabinet_id );
+
+		if ( null === $cabinet ) {
+			return '';
+		}
+
+		$categories = $container->get( CabinetCategoryRepository::class );
+		$category   = $categories->find( $cabinet->category_id );
+
+		if ( null === $category ) {
+			return '';
+		}
+
+		$relations = $container->get( CabinetRelationRepository::class );
+		$parent_id = $relations->get_parent_id( $cabinet_id );
+		$parent    = $parent_id > 0 ? $cabinets->find( $parent_id ) : null;
+
+		if ( null === $parent ) {
+			return '';
+		}
+
+		return self::resolve_detail_url( $category->slug, $parent->slug, $cabinet->slug );
+	}
+
+	/**
 	 * Resolve permalink for a leaf cabinet detail page.
 	 */
 	public static function resolve_detail_url( string $category_slug, string $parent_cabinet_slug, string $cabinet_slug ): string {

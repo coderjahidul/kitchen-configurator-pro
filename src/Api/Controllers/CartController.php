@@ -47,11 +47,17 @@ final class CartController extends RestController {
 				'callback'            => array( $this, 'add_to_cart' ),
 				'permission_callback' => array( RestAuth::class, 'require_mutation_auth' ),
 				'args'                => array(
-					'uuid' => array(
+					'uuid'     => array(
 						'type'              => 'string',
 						'required'          => true,
 						'sanitize_callback' => 'sanitize_text_field',
 						'validate_callback' => array( RestInputValidator::class, 'validate_uuid' ),
+					),
+					'quantity' => array(
+						'type'              => 'integer',
+						'default'           => 1,
+						'sanitize_callback' => 'absint',
+						'validate_callback' => array( RestInputValidator::class, 'validate_quantity' ),
 					),
 				),
 			)
@@ -87,7 +93,8 @@ final class CartController extends RestController {
 			);
 		}
 
-		$uuid = (string) $request->get_param( 'uuid' );
+		$uuid     = (string) $request->get_param( 'uuid' );
+		$quantity = max( 1, (int) $request->get_param( 'quantity' ) );
 
 		try {
 			/** @var CartIntegrationService $cart_service */
@@ -97,13 +104,24 @@ final class CartController extends RestController {
 			$result = $cart_service->add_configuration(
 				$uuid,
 				$context['user_id'],
-				$context['session_id']
+				$context['session_id'],
+				$quantity
 			);
+
+			$redirect = 'yes' === get_option( 'woocommerce_cart_redirect_after_add', 'no' )
+				? $result['cart_url']
+				: '';
 
 			return ApiResponse::success(
 				$result,
 				array(
-					'redirect' => $result['cart_url'],
+					'redirect'   => $redirect,
+					'cart_count'   => function_exists( 'WC' ) && WC()->cart
+						? WC()->cart->get_cart_contents_count()
+						: 0,
+					'cart_hash'    => function_exists( 'WC' ) && WC()->cart
+						? WC()->cart->get_cart_hash()
+						: '',
 				),
 				201
 			);
@@ -111,6 +129,12 @@ final class CartController extends RestController {
 			unset( $exception );
 
 			return ApiResponse::not_found( __( 'Configuration', 'kitchen-configurator-pro' ) );
+		} catch ( \RuntimeException $exception ) {
+			return ApiResponse::error(
+				'kcp_cart_error',
+				$exception->getMessage(),
+				422
+			);
 		} catch ( \Throwable $exception ) {
 			return $this->handle_exception( $exception );
 		}

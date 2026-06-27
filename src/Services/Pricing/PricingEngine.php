@@ -73,19 +73,29 @@ final class PricingEngine {
 
 		$calculated_at = gmdate( 'c' );
 
+		$line_items = array_map(
+			static fn ( $item ) => $item->to_array(),
+			$context->line_items
+		);
+
 		$snapshot_data = array(
 			'calculated_at' => $calculated_at,
 			'currency'      => $currency,
-			'line_items'    => array_map(
-				static fn ( $item ) => $item->to_array(),
-				$context->line_items
-			),
+			'line_items'    => $line_items,
 			'subtotal'      => (float) $subtotal->amount,
 			'tax'           => (float) $tax->amount,
 			'total'         => (float) $total->amount,
 		);
 
-		$price_hash = $this->hash_generator->generate( $snapshot_data );
+		$price_hash = $this->hash_generator->generate(
+			array(
+				'currency'   => $currency,
+				'line_items' => $line_items,
+				'subtotal'   => (float) $subtotal->amount,
+				'tax'        => (float) $tax->amount,
+				'total'      => (float) $total->amount,
+			)
+		);
 
 		return new PricingSnapshot(
 			$calculated_at,
@@ -118,6 +128,6 @@ final class PricingEngine {
 	public function verify_price_hash( ConfigurationInput $input, string $price_hash ): bool {
 		$snapshot = $this->calculate( $input );
 
-		return hash_equals( $snapshot->price_hash->to_string(), $price_hash );
+		return $snapshot->price_hash->matches_string( $price_hash );
 	}
 }

@@ -83,7 +83,7 @@ final class Assets {
 			);
 		}
 
-		if ( in_array( $hook_suffix, array( 'kitchen-configurator_page_kcp-products', 'kitchen-configurator_page_kcp-settings', 'kitchen-configurator_page_kcp-handles', 'kitchen-configurator_page_kcp-colors', 'kitchen-configurator_page_kcp-plinths' ), true ) ) {
+		if ( in_array( $hook_suffix, array( 'kitchen-configurator_page_kcp-products', 'kitchen-configurator_page_kcp-settings', 'kitchen-configurator_page_kcp-handles', 'kitchen-configurator_page_kcp-colors', 'kitchen-configurator_page_kcp-plinths', 'kitchen-configurator_page_kcp-accessories' ), true ) ) {
 			wp_enqueue_media();
 
 			$media_script = KCP_PLUGIN_DIR . 'assets/admin/js/product-preset-media.js';

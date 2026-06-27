@@ -10,7 +10,10 @@ declare(strict_types=1);
 namespace KitchenConfiguratorPro\Integration\WooCommerce;
 
 use KitchenConfiguratorPro\Container;
+use KitchenConfiguratorPro\Repositories\AccessoryRepository;
+use KitchenConfiguratorPro\Repositories\CabinetRepository;
 use KitchenConfiguratorPro\Repositories\ProductPresetRepository;
+use KitchenConfiguratorPro\Services\CabinetListStepService;
 use KitchenConfiguratorPro\Services\ProductBreakdownBuilder;
 use KitchenConfiguratorPro\Services\ProductStorefrontOptionsBuilder;
 use KitchenConfiguratorPro\Services\WooVariationOptionsBuilder;
@@ -1188,6 +1191,8 @@ final class CartPresenter {
 		$pricing     = json_decode( (string) ( $cart_item[ CartHandler::META_PRICING ] ?? '{}' ), true );
 		$lines       = is_array( $pricing['line_items'] ?? null ) ? $pricing['line_items'] : array();
 		$parts       = array();
+		$cabinet_ctx = $this->single_cabinet_context( $cart_item );
+		$edit_url    = is_array( $cabinet_ctx ) ? (string) ( $cabinet_ctx['edit_url'] ?? '' ) : '';
 
 		foreach ( $lines as $index => $line ) {
 			if ( ! is_array( $line ) ) {
@@ -1200,13 +1205,22 @@ final class CartPresenter {
 				continue;
 			}
 
+			$is_cabinet_line = 'cabinet' === (string) ( $line['type'] ?? '' );
+			$description     = $is_cabinet_line && is_array( $cabinet_ctx )
+				? (string) ( $cabinet_ctx['description'] ?? '' )
+				: '';
+
 			$parts[] = array(
 				'key'         => 'line-' . $index,
 				'label'       => $label,
-				'description' => '',
-				'image_url'   => '',
+				'description' => $description,
+				'image_url'   => $this->line_item_image_url(
+					$line,
+					is_array( $cabinet_ctx ) ? $cabinet_ctx : null
+				),
 				'price'       => (float) ( $line['subtotal'] ?? 0 ),
 				'editable'    => false,
+				'edit_url'    => $is_cabinet_line ? $edit_url : '',
 			);
 		}
 
@@ -1215,11 +1229,16 @@ final class CartPresenter {
 			$parts = array(
 				array(
 					'key'         => 'configuration',
-					'label'       => (string) ( $row['label'] ?? '' ),
-					'description' => (string) ( $row['description'] ?? '' ),
-					'image_url'   => (string) ( $row['image_url'] ?? '' ),
+					'label'       => '' !== $group_title ? $group_title : (string) ( $row['label'] ?? '' ),
+					'description' => is_array( $cabinet_ctx )
+						? (string) ( $cabinet_ctx['description'] ?? ( $row['description'] ?? '' ) )
+						: (string) ( $row['description'] ?? '' ),
+					'image_url'   => is_array( $cabinet_ctx )
+						? (string) ( $cabinet_ctx['image_url'] ?? ( $row['image_url'] ?? '' ) )
+						: (string) ( $row['image_url'] ?? '' ),
 					'price'       => (float) ( $row['price'] ?? 0 ),
 					'editable'    => false,
+					'edit_url'    => $edit_url,
 				),
 			);
 		}
@@ -1232,7 +1251,7 @@ final class CartPresenter {
 			'type'        => 'configuration',
 			'cart_key'    => $cart_key,
 			'group_title' => $group_title,
-			'edit_url'    => '',
+			'edit_url'    => $edit_url,
 			'remove_url'  => wc_get_cart_remove_url( $cart_key ),
 			'parts'       => $parts,
 			'surcharges'  => array(),
@@ -1583,6 +1602,13 @@ final class CartPresenter {
 		$lines = array();
 
 		foreach ( WC()->cart->get_cart() as $cart_item ) {
+			if ( CartHandler::is_kcp_cart_item( $cart_item ) ) {
+				foreach ( $this->configuration_summary_from_snapshot( $cart_item ) as $row ) {
+					$lines[] = $row;
+				}
+				continue;
+			}
+
 			if ( ! empty( $cart_item['kcp_color_label'] ) ) {
 				$lines[] = array(
 					'label' => __( 'Frontmateriaal', 'kitchen-configurator-pro' ),
@@ -1860,8 +1886,20 @@ final class CartPresenter {
 		$product    = $cart_item['data'] ?? null;
 		$product_id = $product instanceof \WC_Product ? $product->get_id() : 0;
 
-		$group['subtitle']       = __( 'basiselement', 'kitchen-configurator-pro' );
-		$group['preview_image']  = '';
+		$group['subtitle']      = __( 'basiselement', 'kitchen-configurator-pro' );
+		$group['preview_image'] = '';
+
+		$cabinet_ctx = $this->single_cabinet_context( $cart_item );
+
+		if ( is_array( $cabinet_ctx ) ) {
+			if ( '' !== ( $cabinet_ctx['image_url'] ?? '' ) ) {
+				$group['preview_image'] = (string) $cabinet_ctx['image_url'];
+			}
+
+			if ( '' === ( $group['edit_url'] ?? '' ) && '' !== ( $cabinet_ctx['edit_url'] ?? '' ) ) {
+				$group['edit_url'] = (string) $cabinet_ctx['edit_url'];
+			}
+		}
 
 		if ( $product_id > 0 ) {
 			/** @var ProductPresetRepository $presets */
@@ -1968,9 +2006,10 @@ final class CartPresenter {
 	 * @return array<int, array<string, mixed>>
 	 */
 	private function rows_from_configuration( string $cart_key, array $cart_item ): array {
-		$pricing = json_decode( (string) ( $cart_item[ CartHandler::META_PRICING ] ?? '{}' ), true );
-		$lines   = is_array( $pricing['line_items'] ?? null ) ? $pricing['line_items'] : array();
-		$rows    = array();
+		$pricing     = json_decode( (string) ( $cart_item[ CartHandler::META_PRICING ] ?? '{}' ), true );
+		$lines       = is_array( $pricing['line_items'] ?? null ) ? $pricing['line_items'] : array();
+		$rows        = array();
+		$cabinet_ctx = $this->single_cabinet_context( $cart_item );
 
 		if ( empty( $lines ) ) {
 			$rows[] = $this->row_from_product( $cart_key, $cart_item );
@@ -1994,12 +2033,178 @@ final class CartPresenter {
 				'label'       => $label,
 				'description' => '',
 				'price'       => $price,
-				'image_url'   => '',
+				'image_url'   => $this->line_item_image_url(
+					$line,
+					is_array( $cabinet_ctx ) ? $cabinet_ctx : null
+				),
 				'copyable'    => false,
 			);
 		}
 
 		return $rows;
+	}
+
+	/**
+	 * Resolve a display image URL for a pricing snapshot line item.
+	 *
+	 * @param array<string, mixed>      $line        Pricing line item.
+	 * @param array<string, string>|null $cabinet_ctx Single-cabinet display context.
+	 * @return string
+	 */
+	private function line_item_image_url( array $line, ?array $cabinet_ctx = null ): string {
+		$type         = (string) ( $line['type'] ?? '' );
+		$reference_id = (int) ( $line['reference_id'] ?? 0 );
+
+		if ( 'cabinet' === $type && is_array( $cabinet_ctx ) ) {
+			return (string) ( $cabinet_ctx['image_url'] ?? '' );
+		}
+
+		if ( 'accessory' === $type && $reference_id > 0 ) {
+			/** @var AccessoryRepository $accessories */
+			$accessories = $this->container->get( AccessoryRepository::class );
+			$accessory   = $accessories->find( $reference_id );
+
+			if ( null !== $accessory && '' !== $accessory->thumbnail_url ) {
+				return esc_url_raw( $accessory->thumbnail_url );
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * Build summary rows for a saved cabinet configuration in the cart.
+	 *
+	 * @param array<string, mixed> $cart_item Cart item.
+	 * @return array<int, array{label: string, value: string}>
+	 */
+	private function configuration_summary_from_snapshot( array $cart_item ): array {
+		$config = json_decode( (string) ( $cart_item[ CartHandler::META_CONFIG ] ?? '{}' ), true );
+
+		if ( ! is_array( $config ) ) {
+			return array();
+		}
+
+		$cabinets = is_array( $config['cabinets'] ?? null ) ? $config['cabinets'] : array();
+
+		if ( 1 !== count( $cabinets ) ) {
+			return array();
+		}
+
+		$item       = $cabinets[0];
+		$dimensions = is_array( $item['dimensions'] ?? null ) ? $item['dimensions'] : array();
+		$rows       = array();
+
+		$width = (int) ( $dimensions['width'] ?? 0 );
+
+		if ( $width > 0 ) {
+			$rows[] = array(
+				'label' => __( 'Breedte', 'kitchen-configurator-pro' ),
+				'value' => sprintf( '%d cm', (int) round( $width / 10 ) ),
+			);
+		}
+
+		$height = (int) ( $dimensions['height'] ?? 0 );
+
+		if ( $height > 0 ) {
+			$rows[] = array(
+				'label' => __( 'Hoogte', 'kitchen-configurator-pro' ),
+				'value' => sprintf( '%d cm', (int) round( $height / 10 ) ),
+			);
+		}
+
+		$depth = (int) ( $dimensions['depth'] ?? 0 );
+
+		if ( $depth > 0 ) {
+			$rows[] = array(
+				'label' => __( 'Diepte', 'kitchen-configurator-pro' ),
+				'value' => sprintf( '%d cm', (int) round( $depth / 10 ) ),
+			);
+		}
+
+		$global_options = is_array( $config['global_options'] ?? null ) ? $config['global_options'] : array();
+		$plinth_height  = (int) ( $global_options['plinth_height'] ?? 0 );
+
+		if ( $plinth_height > 0 ) {
+			$rows[] = array(
+				'label' => __( 'Plinthoogte', 'kitchen-configurator-pro' ),
+				'value' => sprintf( '%d cm', (int) round( $plinth_height / 10 ) ),
+			);
+		}
+
+		return $rows;
+	}
+
+	/**
+	 * Resolve display context for a single-cabinet configuration line item.
+	 *
+	 * @param array<string, mixed> $cart_item Cart item.
+	 * @return array<string, string>|null
+	 */
+	private function single_cabinet_context( array $cart_item ): ?array {
+		if ( ! CartHandler::is_kcp_cart_item( $cart_item ) ) {
+			return null;
+		}
+
+		$config = json_decode( (string) ( $cart_item[ CartHandler::META_CONFIG ] ?? '{}' ), true );
+
+		if ( ! is_array( $config ) ) {
+			return null;
+		}
+
+		$cabinets = is_array( $config['cabinets'] ?? null ) ? $config['cabinets'] : array();
+
+		if ( 1 !== count( $cabinets ) ) {
+			return null;
+		}
+
+		$item       = $cabinets[0];
+		$cabinet_id = (int) ( $item['cabinet_id'] ?? 0 );
+
+		if ( $cabinet_id <= 0 ) {
+			return null;
+		}
+
+		/** @var CabinetRepository $cabinets_repo */
+		$cabinets_repo = $this->container->get( CabinetRepository::class );
+		$cabinet       = $cabinets_repo->find( $cabinet_id );
+
+		if ( null === $cabinet ) {
+			return null;
+		}
+
+		$dimensions = is_array( $item['dimensions'] ?? null ) ? $item['dimensions'] : array();
+		$parts      = array();
+		$width      = (int) ( $dimensions['width'] ?? 0 );
+
+		if ( $width > 0 ) {
+			$parts[] = sprintf( '%d cm breed', (int) round( $width / 10 ) );
+		}
+
+		$height = (int) ( $dimensions['height'] ?? 0 );
+
+		if ( $height > 0 ) {
+			$parts[] = sprintf( '%d cm hoog', (int) round( $height / 10 ) );
+		}
+
+		$depth = (int) ( $dimensions['depth'] ?? 0 );
+
+		if ( $depth > 0 ) {
+			$parts[] = sprintf( '%d cm diep', (int) round( $depth / 10 ) );
+		}
+
+		$global_options = is_array( $config['global_options'] ?? null ) ? $config['global_options'] : array();
+		$plinth_height  = (int) ( $global_options['plinth_height'] ?? 0 );
+
+		if ( $plinth_height > 0 ) {
+			$parts[] = sprintf( '%d cm plint', (int) round( $plinth_height / 10 ) );
+		}
+
+		return array(
+			'edit_url'    => CabinetListStepService::resolve_detail_url_for_cabinet( $cabinet_id ),
+			'image_url'   => '' !== $cabinet->image_url ? esc_url_raw( $cabinet->image_url ) : '',
+			'description' => implode( ' · ', $parts ),
+		);
 	}
 
 	/**
