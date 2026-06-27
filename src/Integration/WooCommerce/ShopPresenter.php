@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace KitchenConfiguratorPro\Integration\WooCommerce;
 
 use KitchenConfiguratorPro\Integration\WooCommerce\ProductOptionsPresenter;
+use KitchenConfiguratorPro\Services\ShopBrandLandingService;
 use KitchenConfiguratorPro\Services\ShopHeroService;
 use KitchenConfiguratorPro\Services\WooVariationOptionsBuilder;
 
@@ -25,13 +26,21 @@ final class ShopPresenter {
 	 */
 	public function register(): void {
 		add_filter( 'woocommerce_locate_template', array( $this, 'locate_template' ), 10, 3 );
+		add_filter( 'wc_get_template_part', array( $this, 'filter_product_card_template' ), 10, 3 );
 		add_filter( 'body_class', array( $this, 'body_class' ) );
 		add_filter( 'loop_shop_columns', array( $this, 'shop_columns' ) );
 		add_filter( 'woocommerce_get_price_html', array( $this, 'format_price_html' ), 20, 2 );
 
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'woocommerce_before_main_content', array( $this, 'render_shop_hero' ), 20 );
+		add_action( 'woocommerce_before_main_content', array( $this, 'render_brand_landing_top' ), 22 );
 		add_action( 'woocommerce_before_main_content', array( $this, 'render_shop_header' ), 25 );
+		add_action( 'woocommerce_after_main_content', array( $this, 'render_brand_landing_bottom' ), 5 );
+		add_filter( 'astra_the_title_enabled', array( $this, 'disable_astra_archive_title' ) );
+		add_filter( 'astra_apply_hero_header_banner', array( $this, 'disable_astra_hero_banner' ) );
+		add_filter( 'woocommerce_show_page_title', array( $this, 'hide_woocommerce_page_title' ) );
+		add_action( 'pre_get_posts', array( $this, 'hide_root_brand_product_loop' ) );
+
 		add_action( 'woocommerce_single_product_summary', array( $this, 'render_product_label' ), 4 );
 		add_action( 'woocommerce_before_add_to_cart_form', array( $this, 'open_cart_anchor' ), 1 );
 		add_action( 'woocommerce_after_add_to_cart_form', array( $this, 'close_cart_anchor' ), 99 );
@@ -113,6 +122,14 @@ final class ShopPresenter {
 			$classes[] = 'kcp-shop-active';
 		}
 
+		if ( ShopBrandLandingService::is_active() ) {
+			$classes[] = 'kcp-brand-landing-active';
+		}
+
+		if ( ShopBrandLandingService::is_root_brand_page() ) {
+			$classes[] = 'kcp-brand-root-page';
+		}
+
 		return $classes;
 	}
 
@@ -141,6 +158,16 @@ final class ShopPresenter {
 			array(),
 			KCP_VERSION
 		);
+
+		if ( ShopBrandLandingService::is_active() ) {
+			wp_enqueue_script(
+				'kcp-shop-brand',
+				KCP_PLUGIN_URL . 'assets/frontend/js/shop-brand.js',
+				array(),
+				KCP_VERSION,
+				true
+			);
+		}
 
 		if ( is_shop() ) {
 			$hero_images = ShopHeroService::get_settings()['image_urls'] ?? array();
@@ -212,11 +239,133 @@ final class ShopPresenter {
 	}
 
 	/**
+	 * Force plugin product cards in WooCommerce loops.
+	 *
+	 * @param string $template Template path.
+	 * @param string $slug     Template slug.
+	 * @param string $name     Template name.
+	 * @return string
+	 */
+	public function filter_product_card_template( string $template, string $slug, string $name ): string {
+		if ( 'content' !== $slug || 'product' !== $name || ! $this->is_shop_context() || is_product() ) {
+			return $template;
+		}
+
+		$override = KCP_PLUGIN_DIR . 'templates/woocommerce/content-product.php';
+
+		return file_exists( $override ) ? $override : $template;
+	}
+
+	/**
+	 * Disable the Astra archive banner title on brand landing pages.
+	 *
+	 * @param bool $enabled Whether the title is enabled.
+	 * @return bool
+	 */
+	public function disable_astra_archive_title( bool $enabled ): bool {
+		if ( ShopBrandLandingService::is_active() ) {
+			return false;
+		}
+
+		return $enabled;
+	}
+
+	/**
+	 * Disable the Astra hero/archive banner on brand landing pages.
+	 *
+	 * @param bool $apply Whether to apply the hero banner.
+	 * @return bool
+	 */
+	public function disable_astra_hero_banner( bool $apply ): bool {
+		if ( ShopBrandLandingService::is_active() ) {
+			return false;
+		}
+
+		return $apply;
+	}
+
+	/**
+	 * Hide default WooCommerce archive title on brand landing pages.
+	 *
+	 * @param bool $show Whether to show the page title.
+	 * @return bool
+	 */
+	public function hide_woocommerce_page_title( bool $show ): bool {
+		if ( ShopBrandLandingService::is_active() ) {
+			return false;
+		}
+
+		return $show;
+	}
+
+	/**
+	 * Hide the default WooCommerce product loop on root brand landing pages.
+	 *
+	 * @param \WP_Query $query Main query.
+	 * @return void
+	 */
+	public function hide_root_brand_product_loop( \WP_Query $query ): void {
+		if ( is_admin() || ! $query->is_main_query() ) {
+			return;
+		}
+
+		if ( ! ShopBrandLandingService::is_root_brand_page() ) {
+			return;
+		}
+
+		$query->set( 'post__in', array( 0 ) );
+	}
+
+	/**
+	 * Render the top brand landing sections.
+	 *
+	 * @return void
+	 */
+	public function render_brand_landing_top(): void {
+		if ( ! ShopBrandLandingService::is_active() ) {
+			return;
+		}
+
+		$model = ShopBrandLandingService::get_view_model();
+		$path  = KCP_PLUGIN_DIR . 'templates/woocommerce/partials/brand-landing-top.php';
+
+		if ( ! is_readable( $path ) ) {
+			return;
+		}
+
+		include $path;
+	}
+
+	/**
+	 * Render brand story and back link after the product loop.
+	 *
+	 * @return void
+	 */
+	public function render_brand_landing_bottom(): void {
+		if ( ! ShopBrandLandingService::is_active() ) {
+			return;
+		}
+
+		$model = ShopBrandLandingService::get_view_model();
+		$path  = KCP_PLUGIN_DIR . 'templates/woocommerce/partials/brand-landing-bottom.php';
+
+		if ( ! is_readable( $path ) ) {
+			return;
+		}
+
+		include $path;
+	}
+
+	/**
 	 * Render the shop section header.
 	 *
 	 * @return void
 	 */
 	public function render_shop_header(): void {
+		if ( ShopBrandLandingService::is_active() ) {
+			return;
+		}
+
 		if ( ! is_shop() && ! is_product_category() && ! is_product_tag() ) {
 			return;
 		}
@@ -373,6 +522,20 @@ final class ShopPresenter {
 	 */
 	public static function format_dutch_price( float $amount ): string {
 		return number_format( $amount, 0, ',', '.' ) . ',-';
+	}
+
+	/**
+	 * Resolve storefront price text for archive cards.
+	 */
+	public static function format_archive_price_html( \WC_Product $product ): string {
+		$presenter = new self();
+		$amount    = $presenter->resolve_storefront_price( $product );
+
+		if ( $amount > 0 ) {
+			return self::format_dutch_price( $amount );
+		}
+
+		return '';
 	}
 
 	/**
