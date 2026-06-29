@@ -146,7 +146,7 @@ body.kcp-shell-active:has(.kcp-shell-nav--no-note) {
 	display: grid;
 	grid-template-columns: auto 1fr auto;
 	align-items: center;
-	gap: 1.5rem;
+	gap: 9.5rem;
 	width: 100%;
 	margin-left: auto;
 	margin-right: auto;
