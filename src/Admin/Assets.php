@@ -83,7 +83,7 @@ final class Assets {
 			);
 		}
 
-		if ( in_array( $hook_suffix, array( 'kitchen-configurator_page_kcp-products', 'kitchen-configurator_page_kcp-settings', 'kitchen-configurator_page_kcp-handles', 'kitchen-configurator_page_kcp-colors', 'kitchen-configurator_page_kcp-plinths', 'kitchen-configurator_page_kcp-accessories' ), true ) ) {
+		if ( in_array( $hook_suffix, array( 'kitchen-configurator_page_kcp-cabinet-categories', 'kitchen-configurator_page_kcp-products', 'kitchen-configurator_page_kcp-settings', 'kitchen-configurator_page_kcp-handles', 'kitchen-configurator_page_kcp-colors', 'kitchen-configurator_page_kcp-plinths', 'kitchen-configurator_page_kcp-accessories' ), true ) ) {
 			wp_enqueue_media();
 
 			$media_script = KCP_PLUGIN_DIR . 'assets/admin/js/product-preset-media.js';
@@ -115,6 +115,16 @@ final class Assets {
 				KCP_PLUGIN_URL . 'assets/admin/js/shop-hero-settings.js',
 				array( 'kcp-product-preset-media' ),
 				is_readable( $hero_script ) ? (string) filemtime( $hero_script ) : KCP_VERSION,
+				true
+			);
+
+			$promo_script = KCP_PLUGIN_DIR . 'assets/admin/js/shop-promo-settings.js';
+
+			wp_enqueue_script(
+				'kcp-shop-promo-settings',
+				KCP_PLUGIN_URL . 'assets/admin/js/shop-promo-settings.js',
+				array( 'kcp-product-preset-media' ),
+				is_readable( $promo_script ) ? (string) filemtime( $promo_script ) : KCP_VERSION,
 				true
 			);
 		}

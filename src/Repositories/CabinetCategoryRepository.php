@@ -35,11 +35,13 @@ final class CabinetCategoryRepository extends AbstractRepository {
 	 */
 	protected function sanitize( array $data ): array {
 		return array(
-			'slug'        => $this->resolve_slug( $data ),
-			'name'        => sanitize_text_field( (string) ( $data['name'] ?? '' ) ),
-			'description' => wp_kses_post( (string) ( $data['description'] ?? '' ) ),
-			'sort_order'  => (int) ( $data['sort_order'] ?? 0 ),
-			'is_active'   => $this->to_bool_int( $data['is_active'] ?? 1 ),
+			'slug'                => $this->resolve_slug( $data ),
+			'name'                => sanitize_text_field( (string) ( $data['name'] ?? '' ) ),
+			'description'         => wp_kses_post( (string) ( $data['description'] ?? '' ) ),
+			'image_url_greep'     => esc_url_raw( (string) ( $data['image_url_greep'] ?? '' ) ),
+			'image_url_greeploos' => esc_url_raw( (string) ( $data['image_url_greeploos'] ?? '' ) ),
+			'sort_order'          => (int) ( $data['sort_order'] ?? 0 ),
+			'is_active'           => $this->to_bool_int( $data['is_active'] ?? 1 ),
 		);
 	}
 }

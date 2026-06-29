@@ -1,0 +1,34 @@
+/**
+ * Kitchen Configurator Pro — shared design tokens.
+ * Matched to configurator.keukenkastenfabriek.nl
+ */
+
+:root {
+	--kcp-bg: #f0efee;
+	--kcp-surface: #fff;
+	--kcp-surface-muted: #ececec;
+	--kcp-text: #000;
+	--kcp-text-muted: #a49d93;
+	--kcp-text-body: #a49d93;
+	--kcp-accent: #000;
+	--kcp-border: #d8d8d8;
+	--kcp-border-soft: rgba(164, 157, 147, 0.3);
+	--kcp-taupe: #a49d93;
+	--kcp-taupe-light: #cbc6c2;
+	--kcp-nav-text: #212220;
+	--kcp-font: "DM Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+	--kcp-shell-offset: 9.5rem;
+	--kcp-shell-ease: cubic-bezier(0.625, 0.05, 0, 1);
+}
+
+body.dark-mode {
+	--kcp-bg: #1a1918;
+	--kcp-surface: #242220;
+	--kcp-surface-muted: #2e2b28;
+	--kcp-text: #f0efee;
+	--kcp-text-muted: #cbc6c2;
+	--kcp-text-body: #cbc6c2;
+	--kcp-accent: #f0efee;
+	--kcp-border: #4a4540;
+	--kcp-nav-text: #f0efee;
+}

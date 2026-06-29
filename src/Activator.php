@@ -15,6 +15,8 @@ use KitchenConfiguratorPro\Security\CapabilityManager;
 use KitchenConfiguratorPro\Services\CabinetSelectStepService;
 use KitchenConfiguratorPro\Services\DesignStepService;
 use KitchenConfiguratorPro\Services\ShopHeroService;
+use KitchenConfiguratorPro\Services\ShopPromoService;
+use KitchenConfiguratorPro\Services\SiteShellSettingsService;
 
 /**
  * Handles plugin activation.
@@ -92,8 +94,10 @@ final class Activator {
 					'quote_validity_days' => 30,
 					'design_check_price'  => 75,
 					'shop_hero'           => ShopHeroService::defaults(),
+					'shop_promo'          => ShopPromoService::defaults(),
 					'design_step'         => DesignStepService::defaults(),
 					'cabinet_select_step' => CabinetSelectStepService::defaults(),
+					'site_shell'          => SiteShellSettingsService::defaults(),
 				),
 				'',
 				false

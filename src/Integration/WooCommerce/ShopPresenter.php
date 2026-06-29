@@ -12,6 +12,7 @@ namespace KitchenConfiguratorPro\Integration\WooCommerce;
 use KitchenConfiguratorPro\Integration\WooCommerce\ProductOptionsPresenter;
 use KitchenConfiguratorPro\Services\ShopBrandLandingService;
 use KitchenConfiguratorPro\Services\ShopHeroService;
+use KitchenConfiguratorPro\Services\ShopPromoService;
 use KitchenConfiguratorPro\Services\WooVariationOptionsBuilder;
 
 /**
@@ -35,6 +36,7 @@ final class ShopPresenter {
 		add_action( 'woocommerce_before_main_content', array( $this, 'render_shop_hero' ), 20 );
 		add_action( 'woocommerce_before_main_content', array( $this, 'render_brand_landing_top' ), 22 );
 		add_action( 'woocommerce_before_main_content', array( $this, 'render_shop_header' ), 25 );
+		add_action( 'woocommerce_after_main_content', array( $this, 'render_shop_promo' ), 4 );
 		add_action( 'woocommerce_after_main_content', array( $this, 'render_brand_landing_bottom' ), 5 );
 		add_filter( 'astra_the_title_enabled', array( $this, 'disable_astra_archive_title' ) );
 		add_filter( 'astra_apply_hero_header_banner', array( $this, 'disable_astra_hero_banner' ) );
@@ -169,6 +171,16 @@ final class ShopPresenter {
 			);
 		}
 
+		if ( ShopPromoService::is_enabled() && ( is_shop() || ShopBrandLandingService::is_active() ) ) {
+			wp_enqueue_script(
+				'kcp-shop-promo',
+				KCP_PLUGIN_URL . 'assets/frontend/js/shop-promo.js',
+				array(),
+				KCP_VERSION,
+				true
+			);
+		}
+
 		if ( is_shop() ) {
 			$hero_images = ShopHeroService::get_settings()['image_urls'] ?? array();
 
@@ -263,7 +275,7 @@ final class ShopPresenter {
 	 * @return bool
 	 */
 	public function disable_astra_archive_title( bool $enabled ): bool {
-		if ( ShopBrandLandingService::is_active() ) {
+		if ( ShopBrandLandingService::is_active() || is_shop() ) {
 			return false;
 		}
 
@@ -277,7 +289,7 @@ final class ShopPresenter {
 	 * @return bool
 	 */
 	public function disable_astra_hero_banner( bool $apply ): bool {
-		if ( ShopBrandLandingService::is_active() ) {
+		if ( ShopBrandLandingService::is_active() || is_shop() ) {
 			return false;
 		}
 
@@ -291,7 +303,7 @@ final class ShopPresenter {
 	 * @return bool
 	 */
 	public function hide_woocommerce_page_title( bool $show ): bool {
-		if ( ShopBrandLandingService::is_active() ) {
+		if ( ShopBrandLandingService::is_active() || is_shop() ) {
 			return false;
 		}
 
@@ -334,6 +346,19 @@ final class ShopPresenter {
 		}
 
 		include $path;
+	}
+
+	/**
+	 * Render USP bar and promotional tiles after the shop product grid.
+	 *
+	 * @return void
+	 */
+	public function render_shop_promo(): void {
+		if ( ! is_shop() ) {
+			return;
+		}
+
+		ShopPromoService::render();
 	}
 
 	/**

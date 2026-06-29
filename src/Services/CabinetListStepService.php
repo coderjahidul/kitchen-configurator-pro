@@ -232,7 +232,7 @@ final class CabinetListStepService {
 		$parent    = $parent_id > 0 ? $cabinets->find( $parent_id ) : null;
 
 		if ( null === $parent ) {
-			return '';
+			return self::resolve_detail_url( $category->slug, $cabinet->slug, $cabinet->slug );
 		}
 
 		return self::resolve_detail_url( $category->slug, $parent->slug, $cabinet->slug );
@@ -255,6 +255,19 @@ final class CabinetListStepService {
 
 		if ( is_string( $cached ) && '' !== $cached ) {
 			return $cached;
+		}
+
+		if ( $parent_cabinet_slug === $cabinet_slug ) {
+			$group_url = CabinetGroupStepService::resolve_group_page_url( $category_slug );
+
+			if ( '' === $group_url ) {
+				return '';
+			}
+
+			$url = trailingslashit( $group_url ) . $cabinet_slug . '/' . $cabinet_slug . '/';
+			set_transient( $transient_key, $url, DAY_IN_SECONDS );
+
+			return $url;
 		}
 
 		$list_url = self::resolve_child_list_url( $category_slug, $parent_cabinet_slug );

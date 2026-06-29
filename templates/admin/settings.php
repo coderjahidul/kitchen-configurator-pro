@@ -11,6 +11,7 @@
 defined( 'ABSPATH' ) || exit;
 
 $shop_hero = is_array( $shop_hero ?? null ) ? $shop_hero : array();
+$shop_promo = is_array( $shop_promo ?? null ) ? $shop_promo : array();
 $design_step = is_array( $design_step ?? null ) ? $design_step : array();
 
 ?>
@@ -262,6 +263,142 @@ $design_step = is_array( $design_step ?? null ) ? $design_step : array();
 			</tr>
 		</table>
 
+		<h2><?php esc_html_e( 'Shop page promo sections', 'kitchen-configurator-pro' ); ?></h2>
+		<p class="description"><?php esc_html_e( 'USP bar and promotional tiles shown below the product grid on the shop page.', 'kitchen-configurator-pro' ); ?></p>
+
+		<table class="form-table" role="presentation">
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Show promo sections', 'kitchen-configurator-pro' ); ?></th>
+				<td>
+					<label for="kcp-shop-promo-enabled">
+						<input
+							type="checkbox"
+							name="shop_promo_enabled"
+							id="kcp-shop-promo-enabled"
+							value="1"
+							<?php checked( ! empty( $shop_promo['enabled'] ) ); ?>
+						/>
+						<?php esc_html_e( 'Enabled', 'kitchen-configurator-pro' ); ?>
+					</label>
+				</td>
+			</tr>
+		</table>
+
+		<h3><?php esc_html_e( 'USP bar', 'kitchen-configurator-pro' ); ?></h3>
+		<table class="form-table" role="presentation">
+			<?php
+			$promo_usps = is_array( $shop_promo['usps'] ?? null ) ? $shop_promo['usps'] : array();
+			$icon_options = array(
+				'cabinet' => __( 'Pre-assembled cabinets', 'kitchen-configurator-pro' ),
+				'palette' => __( 'Colors / options', 'kitchen-configurator-pro' ),
+				'advice'  => __( 'Professional advice', 'kitchen-configurator-pro' ),
+				'factory' => __( 'Direct from factory', 'kitchen-configurator-pro' ),
+			);
+
+			for ( $i = 0; $i < 4; $i++ ) :
+				$usp = is_array( $promo_usps[ $i ] ?? null ) ? $promo_usps[ $i ] : array();
+				?>
+				<tr>
+					<th scope="row">
+						<?php
+						printf(
+							/* translators: %d: USP item number */
+							esc_html__( 'USP %d', 'kitchen-configurator-pro' ),
+							$i + 1
+						);
+						?>
+					</th>
+					<td>
+						<p>
+							<label for="kcp-shop-promo-usp-icon-<?php echo esc_attr( (string) $i ); ?>"><?php esc_html_e( 'Icon', 'kitchen-configurator-pro' ); ?></label><br />
+							<select name="shop_promo_usp_icon_<?php echo esc_attr( (string) $i ); ?>" id="kcp-shop-promo-usp-icon-<?php echo esc_attr( (string) $i ); ?>">
+								<?php foreach ( $icon_options as $icon_key => $icon_label ) : ?>
+									<option value="<?php echo esc_attr( $icon_key ); ?>" <?php selected( (string) ( $usp['icon'] ?? '' ), $icon_key ); ?>>
+										<?php echo esc_html( $icon_label ); ?>
+									</option>
+								<?php endforeach; ?>
+							</select>
+						</p>
+						<p>
+							<label for="kcp-shop-promo-usp-label-<?php echo esc_attr( (string) $i ); ?>"><?php esc_html_e( 'Label', 'kitchen-configurator-pro' ); ?></label><br />
+							<input
+								type="text"
+								class="large-text"
+								name="shop_promo_usp_label_<?php echo esc_attr( (string) $i ); ?>"
+								id="kcp-shop-promo-usp-label-<?php echo esc_attr( (string) $i ); ?>"
+								value="<?php echo esc_attr( (string) ( $usp['label'] ?? '' ) ); ?>"
+							/>
+						</p>
+					</td>
+				</tr>
+			<?php endfor; ?>
+		</table>
+
+		<h3><?php esc_html_e( 'Promotional tiles', 'kitchen-configurator-pro' ); ?></h3>
+		<table class="form-table" role="presentation">
+			<tr>
+				<th scope="row"><label for="kcp-shop-promo-tiles-source"><?php esc_html_e( 'Tile source', 'kitchen-configurator-pro' ); ?></label></th>
+				<td>
+					<select name="shop_promo_tiles_source" id="kcp-shop-promo-tiles-source">
+						<option value="categories" <?php selected( (string) ( $shop_promo['tiles_source'] ?? 'categories' ), 'categories' ); ?>>
+							<?php esc_html_e( 'Product categories (dynamic)', 'kitchen-configurator-pro' ); ?>
+						</option>
+						<option value="manual" <?php selected( (string) ( $shop_promo['tiles_source'] ?? '' ), 'manual' ); ?>>
+							<?php esc_html_e( 'Manual tiles', 'kitchen-configurator-pro' ); ?>
+						</option>
+					</select>
+					<p class="description">
+						<?php esc_html_e( 'Dynamic tiles load child categories of the parent slug below (or top-level categories when empty). Each category uses its thumbnail, video, and promo tile label.', 'kitchen-configurator-pro' ); ?>
+					</p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="kcp-shop-promo-tiles-parent-slug"><?php esc_html_e( 'Parent category slug', 'kitchen-configurator-pro' ); ?></label></th>
+				<td>
+					<input
+						type="text"
+						class="regular-text"
+						id="kcp-shop-promo-tiles-parent-slug"
+						name="shop_promo_tiles_parent_slug"
+						value="<?php echo esc_attr( (string) ( $shop_promo['tiles_parent_slug'] ?? '' ) ); ?>"
+						placeholder="<?php esc_attr_e( 'Leave empty to use Site Shell webshop slug or top-level categories', 'kitchen-configurator-pro' ); ?>"
+					/>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="kcp-shop-promo-tiles-limit"><?php esc_html_e( 'Maximum tiles', 'kitchen-configurator-pro' ); ?></label></th>
+				<td>
+					<input
+						type="number"
+						class="small-text"
+						id="kcp-shop-promo-tiles-limit"
+						name="shop_promo_tiles_limit"
+						value="<?php echo esc_attr( (string) ( $shop_promo['tiles_limit'] ?? 0 ) ); ?>"
+						min="0"
+						step="1"
+					/>
+					<p class="description"><?php esc_html_e( '0 shows all matching categories.', 'kitchen-configurator-pro' ); ?></p>
+				</td>
+			</tr>
+		</table>
+
+		<?php if ( 'manual' === (string) ( $shop_promo['tiles_source'] ?? '' ) ) : ?>
+			<?php
+			$promo_tiles = is_array( $shop_promo['tiles'] ?? null ) ? $shop_promo['tiles'] : array();
+
+			while ( count( $promo_tiles ) < 3 ) {
+				$promo_tiles[] = array();
+			}
+			?>
+			<div class="kcp-repeater kcp-repeater--shop-promo-tiles" data-kcp-shop-promo-tiles>
+				<div class="kcp-repeater__rows">
+					<?php foreach ( array_slice( $promo_tiles, 0, 3 ) as $index => $tile ) : ?>
+						<?php require KCP_PLUGIN_DIR . 'templates/admin/partials/shop-promo-tile-row.php'; ?>
+					<?php endforeach; ?>
+				</div>
+			</div>
+		<?php endif; ?>
+
 		<h2><?php esc_html_e( 'Design step page', 'kitchen-configurator-pro' ); ?></h2>
 		<p class="description">
 			<?php
@@ -374,6 +511,8 @@ $design_step = is_array( $design_step ?? null ) ? $design_step : array();
 				<td><input type="url" name="cabinet_select_design_edit_url" id="kcp-cabinet-select-design-edit-url" class="large-text" value="<?php echo esc_attr( (string) ( $cabinet_select_step['design_edit_url'] ?? '' ) ); ?>" /></td>
 			</tr>
 		</table>
+
+		<?php require KCP_PLUGIN_DIR . 'templates/admin/partials/site-shell-settings.php'; ?>
 
 		<p class="submit">
 			<button type="submit" class="button button-primary">

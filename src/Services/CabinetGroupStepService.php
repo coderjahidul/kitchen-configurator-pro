@@ -41,7 +41,6 @@ final class CabinetGroupStepService {
 
 		$select_url = self::resolve_cabinet_select_page_url();
 		$design_url = self::resolve_design_page_url();
-		$shop_url   = self::resolve_shop_url();
 		$shared     = CabinetSelectStepService::get_public_config();
 
 		$breadcrumb_parent     = (string) ( $select['breadcrumb_parent'] ?? '' );
@@ -59,7 +58,7 @@ final class CabinetGroupStepService {
 		$breadcrumb_middle_url = $select_url;
 
 		$heading = is_array( $category ) ? (string) ( $category['name'] ?? $slug ) : $slug;
-		$items   = self::resolve_items( $slug, is_array( $category ) ? (int) ( $category['id'] ?? 0 ) : 0, $shop_url );
+		$items   = self::resolve_items( $slug, is_array( $category ) ? (int) ( $category['id'] ?? 0 ) : 0 );
 
 		return array(
 			'slug'                    => $slug,
@@ -72,7 +71,6 @@ final class CabinetGroupStepService {
 			'breadcrumb_current'      => $heading,
 			'back_url'                => $select_url,
 			'back_label'              => (string) ( $defaults['back_label'] ?? '' ),
-			'shop_url'                => $shop_url,
 			'items'                   => $items,
 			'design_zones'            => $shared['design_zones'] ?? array(),
 			'catalog_options'         => $shared['catalog_options'] ?? array(),
@@ -193,8 +191,8 @@ final class CabinetGroupStepService {
 	/**
 	 * @return array<int, array<string, mixed>>
 	 */
-	private static function resolve_items( string $slug, int $category_id, string $shop_url ): array {
-		$db_items = self::items_from_database( $category_id, $shop_url, $slug );
+	private static function resolve_items( string $slug, int $category_id ): array {
+		$db_items = self::items_from_database( $category_id, $slug );
 
 		if ( ! empty( $db_items ) ) {
 			return $db_items;
@@ -204,13 +202,15 @@ final class CabinetGroupStepService {
 		$items    = $defaults[ $slug ] ?? array();
 
 		return array_map(
-			static function ( array $item ) use ( $shop_url, $slug ): array {
+			static function ( array $item ) use ( $slug ): array {
+				$item_slug = (string) ( $item['slug'] ?? '' );
+
 				return array(
 					'id'        => 0,
-					'slug'      => (string) ( $item['slug'] ?? '' ),
+					'slug'      => $item_slug,
 					'name'      => (string) ( $item['name'] ?? '' ),
 					'image_url' => (string) ( $item['image_url'] ?? '' ),
-					'url'       => self::build_item_url( $shop_url, $slug, (string) ( $item['slug'] ?? '' ) ),
+					'url'       => self::build_leaf_url( $slug, $item_slug ),
 				);
 			},
 			$items
@@ -222,7 +222,7 @@ final class CabinetGroupStepService {
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
-	private static function items_from_database( int $category_id, string $shop_url, string $category_slug ): array {
+	private static function items_from_database( int $category_id, string $category_slug ): array {
 		if ( $category_id <= 0 || ! function_exists( 'kcp_plugin' ) ) {
 			return array();
 		}
@@ -260,7 +260,7 @@ final class CabinetGroupStepService {
 				'has_children' => $has_children,
 				'url'          => $has_children
 					? CabinetListStepService::resolve_child_list_url( $category_slug, $cabinet_slug )
-					: self::build_item_url( $shop_url, $category_slug, $cabinet_slug, $cabinet_id ),
+					: CabinetListStepService::resolve_detail_url_for_cabinet( $cabinet_id ),
 			);
 		}
 
@@ -307,24 +307,19 @@ final class CabinetGroupStepService {
 		);
 	}
 
-	private static function build_item_url( string $shop_url, string $category_slug, string $item_slug, int $cabinet_id = 0 ): string {
-		if ( '' === $shop_url ) {
+	private static function build_leaf_url( string $category_slug, string $item_slug, int $cabinet_id = 0 ): string {
+		if ( $cabinet_id > 0 ) {
+			$url = CabinetListStepService::resolve_detail_url_for_cabinet( $cabinet_id );
+			if ( '' !== $url ) {
+				return $url;
+			}
+		}
+
+		if ( '' === $item_slug ) {
 			return '';
 		}
 
-		$args = array(
-			'kcp_category_slug' => $category_slug,
-		);
-
-		if ( '' !== $item_slug ) {
-			$args['kcp_subtype'] = $item_slug;
-		}
-
-		if ( $cabinet_id > 0 ) {
-			$args['kcp_cabinet'] = (string) $cabinet_id;
-		}
-
-		return add_query_arg( $args, $shop_url );
+		return CabinetListStepService::resolve_detail_url( $category_slug, $item_slug, $item_slug );
 	}
 
 	private static function resolve_cabinet_select_page_url(): string {
@@ -372,18 +367,5 @@ final class CabinetGroupStepService {
 		}
 
 		return home_url( '/' );
-	}
-
-	private static function resolve_shop_url(): string {
-		$shop_page_id = (int) get_option( 'woocommerce_shop_page_id', 0 );
-
-		if ( $shop_page_id > 0 ) {
-			$url = get_permalink( $shop_page_id );
-			if ( is_string( $url ) && '' !== $url ) {
-				return $url;
-			}
-		}
-
-		return home_url( '/shop/' );
 	}
 }

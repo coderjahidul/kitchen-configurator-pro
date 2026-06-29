@@ -63,7 +63,7 @@ final class CabinetSelectStepService {
 				$row          = Arr::to_array( $category );
 				$slug         = (string) ( $row['slug'] ?? '' );
 				$position     = self::category_visual_position( $slug );
-				$image_urls   = self::category_image_urls( $slug );
+				$image_urls   = self::category_image_urls( $slug, $row );
 				$mask_sets    = self::category_masks_by_type( $position );
 				$categories[] = array(
 					'id'                     => (int) ( $row['id'] ?? 0 ),
@@ -301,9 +301,42 @@ final class CabinetSelectStepService {
 	/**
 	 * Base cabinet preview images per kitchen type.
 	 *
+	 * @param string               $slug Category slug.
+	 * @param array<string, mixed> $row  Optional category row from the database.
 	 * @return array<string, string>
 	 */
-	private static function category_image_urls( string $slug ): array {
+	private static function category_image_urls( string $slug, array $row = array() ): array {
+		$defaults = self::default_category_image_files( $slug );
+		$urls     = array();
+
+		$field_map = array(
+			KitchenTypeService::TYPE_GREP      => 'image_url_greep',
+			KitchenTypeService::TYPE_GREEPLOOS => 'image_url_greeploos',
+		);
+
+		foreach ( $field_map as $type => $field ) {
+			$custom = esc_url_raw( (string) ( $row[ $field ] ?? '' ) );
+
+			if ( '' !== $custom ) {
+				$urls[ $type ] = $custom;
+				continue;
+			}
+
+			$file = (string) ( $defaults[ $type ] ?? '' );
+			$urls[ $type ] = '' !== $file
+				? KCP_PLUGIN_URL . 'assets/frontend/images/cabinet-select/' . $file
+				: '';
+		}
+
+		return $urls;
+	}
+
+	/**
+	 * Bundled preview image filenames per kitchen type.
+	 *
+	 * @return array<string, string>
+	 */
+	private static function default_category_image_files( string $slug ): array {
 		$map = array(
 			'onderkasten' => array(
 				KitchenTypeService::TYPE_GREP      => 'greep-onderkasten.png',
@@ -319,16 +352,7 @@ final class CabinetSelectStepService {
 			),
 		);
 
-		$files = $map[ $slug ] ?? array();
-		$urls  = array();
-
-		foreach ( $files as $type => $file ) {
-			$urls[ $type ] = '' !== $file
-				? KCP_PLUGIN_URL . 'assets/frontend/images/cabinet-select/' . $file
-				: '';
-		}
-
-		return $urls;
+		return $map[ $slug ] ?? array();
 	}
 
 	/**
@@ -341,17 +365,6 @@ final class CabinetSelectStepService {
 			KitchenTypeService::TYPE_GREP      => self::category_masks( $position, KitchenTypeService::TYPE_GREP ),
 			KitchenTypeService::TYPE_GREEPLOOS => self::category_masks( $position, KitchenTypeService::TYPE_GREEPLOOS ),
 		);
-	}
-
-	/**
-	 * Default preview image for a cabinet category slug.
-	 *
-	 * @deprecated Use category_image_urls().
-	 */
-	private static function category_image_url( string $slug ): string {
-		$urls = self::category_image_urls( $slug );
-
-		return (string) ( $urls[ KitchenTypeService::TYPE_GREP ] ?? '' );
 	}
 
 	/**

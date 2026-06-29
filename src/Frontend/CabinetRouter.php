@@ -19,7 +19,7 @@ use KitchenConfiguratorPro\Support\Helpers;
  */
 final class CabinetRouter {
 
-	private const REWRITE_VERSION = '3';
+	private const REWRITE_VERSION = '4';
 
 	private static bool $is_child_list_route = false;
 
@@ -30,6 +30,7 @@ final class CabinetRouter {
 		add_action( 'init', array( $this, 'maybe_flush_rewrite_rules' ), 99 );
 		add_filter( 'query_vars', array( $this, 'register_query_vars' ) );
 		add_filter( 'request', array( $this, 'match_cabinet_request' ) );
+		add_action( 'template_redirect', array( $this, 'redirect_legacy_cabinet_query' ), 3 );
 		add_action( 'template_redirect', array( $this, 'handle_detail_route' ), 4 );
 		add_action( 'template_redirect', array( $this, 'handle_child_list_route' ), 5 );
 	}
@@ -116,6 +117,32 @@ final class CabinetRouter {
 		$vars[] = 'kcp_cabinet_slug';
 
 		return $vars;
+	}
+
+	/**
+	 * Redirect legacy shop URLs that used kcp_cabinet query args.
+	 *
+	 * @return void
+	 */
+	public function redirect_legacy_cabinet_query(): void {
+		if ( ! isset( $_GET['kcp_cabinet'] ) ) {
+			return;
+		}
+
+		$cabinet_id = (int) $_GET['kcp_cabinet'];
+
+		if ( $cabinet_id <= 0 ) {
+			return;
+		}
+
+		$url = CabinetListStepService::resolve_detail_url_for_cabinet( $cabinet_id );
+
+		if ( '' === $url ) {
+			return;
+		}
+
+		wp_safe_redirect( $url );
+		exit;
 	}
 
 	/**
@@ -266,9 +293,8 @@ final class CabinetRouter {
 
 		$config = CabinetDetailStepService::get_public_config( $category_slug, $parent_slug, $cabinet_slug );
 		$cabinet_id = (int) ( $config['cabinet_id'] ?? 0 );
-		$parent_id  = (int) ( $config['parent_cabinet_id'] ?? 0 );
 
-		if ( $cabinet_id <= 0 || $parent_id <= 0 ) {
+		if ( $cabinet_id <= 0 ) {
 			return false;
 		}
 
@@ -276,6 +302,16 @@ final class CabinetRouter {
 		$relations = kcp_plugin()->container()->get( CabinetRelationRepository::class );
 
 		if ( $relations->has_children( $cabinet_id ) ) {
+			return false;
+		}
+
+		if ( $parent_slug === $cabinet_slug ) {
+			return 0 === $relations->get_parent_id( $cabinet_id );
+		}
+
+		$parent_id = (int) ( $config['parent_cabinet_id'] ?? 0 );
+
+		if ( $parent_id <= 0 ) {
 			return false;
 		}
 

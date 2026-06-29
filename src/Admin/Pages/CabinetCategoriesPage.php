@@ -77,6 +77,16 @@ final class CabinetCategoriesPage extends AbstractCrudPage {
 				'label' => __( 'Description', 'kitchen-configurator-pro' ),
 				'rows'  => 4,
 			),
+			'image_url_greep' => array(
+				'type'        => 'image',
+				'label'       => __( 'Preview image (greep)', 'kitchen-configurator-pro' ),
+				'description' => __( 'Shown on the cabinet select page for kitchens with handles.', 'kitchen-configurator-pro' ),
+			),
+			'image_url_greeploos' => array(
+				'type'        => 'image',
+				'label'       => __( 'Preview image (greeploos)', 'kitchen-configurator-pro' ),
+				'description' => __( 'Shown on the cabinet select page for handle-less kitchens.', 'kitchen-configurator-pro' ),
+			),
 			'sort_order'  => array(
 				'type'    => 'number',
 				'label'   => __( 'Sort Order', 'kitchen-configurator-pro' ),

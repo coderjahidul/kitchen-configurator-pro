@@ -102,6 +102,11 @@ final class FrontendServiceProvider {
 			DesignAssets::class,
 			static fn () => new DesignAssets()
 		);
+
+		$this->container->singleton(
+			SiteShellPresenter::class,
+			static fn () => new SiteShellPresenter()
+		);
 	}
 
 	/**
@@ -117,6 +122,7 @@ final class FrontendServiceProvider {
 		$this->container->get( CabinetListShortcode::class )->register();
 		$this->container->get( CabinetDetailShortcode::class )->register();
 		$this->container->get( CabinetRouter::class )->register();
+		$this->container->get( SiteShellPresenter::class )->register();
 		$this->container->get( Assets::class )->register();
 		$this->container->get( DesignAssets::class )->register();
 		$this->container->get( CabinetSelectAssets::class )->register();

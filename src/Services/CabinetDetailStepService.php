@@ -53,6 +53,8 @@ final class CabinetDetailStepService {
 		$design_url = self::resolve_design_page_url();
 		$group_url  = CabinetGroupStepService::resolve_group_page_url( $category_slug );
 		$list_url   = CabinetListStepService::resolve_child_list_url( $category_slug, $parent_cabinet_slug );
+		$is_top_level_leaf = $parent_cabinet_slug === $cabinet_slug;
+		$back_url   = $is_top_level_leaf ? $group_url : $list_url;
 
 		$breadcrumb_parent     = (string) ( $select_settings['breadcrumb_parent'] ?? '' );
 		$breadcrumb_parent_url = (string) ( $select_settings['breadcrumb_parent_url'] ?? '' );
@@ -65,13 +67,15 @@ final class CabinetDetailStepService {
 			$breadcrumb_parent_url = $design_url;
 		}
 
-		$list_config = CabinetListStepService::get_public_config( $category_slug, $parent_cabinet_slug );
+		$list_config = $is_top_level_leaf
+			? array( 'breadcrumbs' => self::top_level_breadcrumbs( $category_slug, $breadcrumb_parent, $breadcrumb_parent_url, $shared, $select_url, $group_url ) )
+			: CabinetListStepService::get_public_config( $category_slug, $parent_cabinet_slug );
 		$breadcrumbs = is_array( $list_config['breadcrumbs'] ?? null ) ? $list_config['breadcrumbs'] : array();
 
-		if ( ! empty( $breadcrumbs ) ) {
+		if ( ! empty( $breadcrumbs ) && ! $is_top_level_leaf ) {
 			$last_index                        = count( $breadcrumbs ) - 1;
 			$breadcrumbs[ $last_index ]['url'] = $list_url;
-		} elseif ( is_array( $parent ) ) {
+		} elseif ( ! $is_top_level_leaf && is_array( $parent ) ) {
 			$breadcrumbs[] = array(
 				'label' => (string) ( $parent['name'] ?? $parent_cabinet_slug ),
 				'url'   => $list_url,
@@ -90,7 +94,9 @@ final class CabinetDetailStepService {
 		return array(
 			'category_slug'       => $category_slug,
 			'parent_cabinet_slug' => $parent_cabinet_slug,
-			'parent_cabinet_id'   => is_array( $parent ) ? (int) ( $parent['id'] ?? 0 ) : 0,
+			'parent_cabinet_id'   => $is_top_level_leaf
+				? $cabinet_id
+				: ( is_array( $parent ) ? (int) ( $parent['id'] ?? 0 ) : 0 ),
 			'cabinet_slug'        => $cabinet_slug,
 			'cabinet_id'          => $cabinet_id,
 			'layout_id'           => $layout_id,
@@ -104,7 +110,7 @@ final class CabinetDetailStepService {
 			'plinth_id'           => (int) ( $plinth['id'] ?? 0 ),
 			'upsells'             => self::resolve_upsells(),
 			'breadcrumbs'         => $breadcrumbs,
-			'back_url'            => $list_url,
+			'back_url'            => $back_url,
 			'back_label'          => (string) ( $defaults['back_label'] ?? '' ),
 			'cart_url'            => function_exists( 'wc_get_cart_url' ) ? wc_get_cart_url() : home_url( '/cart/' ),
 			'cart_enabled'        => $cart_ready,
@@ -466,6 +472,54 @@ final class CabinetDetailStepService {
 			'max'   => $normalized_max,
 			'step'  => max( 1, $step ),
 		);
+	}
+
+	/**
+	 * Breadcrumbs for top-level leaf cabinets (no parent in catalog tree).
+	 *
+	 * @param string               $category_slug Category slug.
+	 * @param string               $design_label  Design step label.
+	 * @param string               $design_url    Design step URL.
+	 * @param array<string, mixed> $shared        Shared cabinet select config.
+	 * @param string               $select_url    Cabinet select page URL.
+	 * @param string               $group_url     Cabinet group page URL.
+	 * @return array<int, array{label: string, url: string}>
+	 */
+	private static function top_level_breadcrumbs(
+		string $category_slug,
+		string $design_label,
+		string $design_url,
+		array $shared,
+		string $select_url,
+		string $group_url
+	): array {
+		$category = self::find_category( $category_slug );
+		$crumbs   = array();
+
+		if ( '' !== trim( $design_label ) ) {
+			$crumbs[] = array(
+				'label' => $design_label,
+				'url'   => $design_url,
+			);
+		}
+
+		$select_label = (string) ( $shared['breadcrumb_current'] ?? __( 'selecteer kasten', 'kitchen-configurator-pro' ) );
+		if ( '' !== trim( $select_label ) ) {
+			$crumbs[] = array(
+				'label' => $select_label,
+				'url'   => $select_url,
+			);
+		}
+
+		$group_label = is_array( $category ) ? (string) ( $category['name'] ?? $category_slug ) : $category_slug;
+		if ( '' !== trim( $group_label ) ) {
+			$crumbs[] = array(
+				'label' => $group_label,
+				'url'   => $group_url,
+			);
+		}
+
+		return $crumbs;
 	}
 
 	/**

@@ -15,18 +15,22 @@ namespace KitchenConfiguratorPro\Domain\Entities;
 final class CabinetCategory {
 
 	/**
-	 * @param int    $id          Primary key.
-	 * @param string $slug        URL slug.
-	 * @param string $name        Display name.
-	 * @param string $description Description.
-	 * @param int    $sort_order  Sort order.
-	 * @param bool   $is_active   Active flag.
+	 * @param int    $id                   Primary key.
+	 * @param string $slug                 URL slug.
+	 * @param string $name                 Display name.
+	 * @param string $description          Description.
+	 * @param string $image_url_greep      Preview image for greep kitchen type.
+	 * @param string $image_url_greeploos  Preview image for greeploos kitchen type.
+	 * @param int    $sort_order           Sort order.
+	 * @param bool   $is_active            Active flag.
 	 */
 	public function __construct(
 		public readonly int $id,
 		public readonly string $slug,
 		public readonly string $name,
 		public readonly string $description,
+		public readonly string $image_url_greep,
+		public readonly string $image_url_greeploos,
 		public readonly int $sort_order,
 		public readonly bool $is_active
 	) {
@@ -44,6 +48,8 @@ final class CabinetCategory {
 			(string) $row['slug'],
 			(string) $row['name'],
 			(string) ( $row['description'] ?? '' ),
+			(string) ( $row['image_url_greep'] ?? '' ),
+			(string) ( $row['image_url_greeploos'] ?? '' ),
 			(int) $row['sort_order'],
 			(bool) (int) $row['is_active']
 		);
@@ -56,12 +62,14 @@ final class CabinetCategory {
 	 */
 	public function to_array(): array {
 		return array(
-			'id'          => $this->id,
-			'slug'        => $this->slug,
-			'name'        => $this->name,
-			'description' => $this->description,
-			'sort_order'  => $this->sort_order,
-			'is_active'   => $this->is_active,
+			'id'                  => $this->id,
+			'slug'                => $this->slug,
+			'name'                => $this->name,
+			'description'         => $this->description,
+			'image_url_greep'     => $this->image_url_greep,
+			'image_url_greeploos' => $this->image_url_greeploos,
+			'sort_order'          => $this->sort_order,
+			'is_active'           => $this->is_active,
 		);
 	}
 }

@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace KitchenConfiguratorPro\Admin\Pages;
 
 use KitchenConfiguratorPro\Admin\AbstractCrudPage;
+use KitchenConfiguratorPro\Domain\Enums\MaterialType;
 use KitchenConfiguratorPro\Repositories\ColorRepository;
 use KitchenConfiguratorPro\Repositories\MaterialRepository;
 use KitchenConfiguratorPro\Support\Arr;
@@ -53,10 +54,83 @@ final class ColorsPage extends AbstractCrudPage {
 	protected function list_columns(): array {
 		return array(
 			'name'        => __( 'Name', 'kitchen-configurator-pro' ),
-			'material_id' => __( 'Material ID', 'kitchen-configurator-pro' ),
+			'material_id' => __( 'Material', 'kitchen-configurator-pro' ),
+			'zone'        => __( 'Design Zone', 'kitchen-configurator-pro' ),
 			'hex_code'    => __( 'Hex', 'kitchen-configurator-pro' ),
 			'is_active'   => __( 'Active', 'kitchen-configurator-pro' ),
 		);
+	}
+
+	/**
+	 * Cached material rows keyed by ID.
+	 *
+	 * @var array<int, array{id: int, name: string, material_type: string}>|null
+	 */
+	private ?array $material_rows = null;
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function format_column( string $column, array $row ): string {
+		if ( 'material_id' === $column ) {
+			$material_id = (int) ( $row['material_id'] ?? 0 );
+			$materials   = $this->material_rows();
+
+			return esc_html( $materials[ $material_id ]['name'] ?? __( 'Unknown', 'kitchen-configurator-pro' ) );
+		}
+
+		if ( 'zone' === $column ) {
+			$material_id = (int) ( $row['material_id'] ?? 0 );
+			$materials   = $this->material_rows();
+			$type        = (string) ( $materials[ $material_id ]['material_type'] ?? '' );
+
+			return esc_html( $this->zone_label_for_material_type( $type ) );
+		}
+
+		return parent::format_column( $column, $row );
+	}
+
+	/**
+	 * Load material rows for list display.
+	 *
+	 * @return array<int, array{id: int, name: string, material_type: string}>
+	 */
+	private function material_rows(): array {
+		if ( null !== $this->material_rows ) {
+			return $this->material_rows;
+		}
+
+		$this->material_rows = array();
+
+		/** @var MaterialRepository $materials */
+		$materials = $this->container->get( MaterialRepository::class );
+
+		foreach ( $materials->find_all() as $material ) {
+			$row = Arr::to_array( $material );
+			$this->material_rows[ (int) $row['id'] ] = array(
+				'id'            => (int) $row['id'],
+				'name'          => (string) $row['name'],
+				'material_type' => (string) $row['material_type'],
+			);
+		}
+
+		return $this->material_rows;
+	}
+
+	/**
+	 * Map material type to design zone label.
+	 *
+	 * @param string $material_type Material type value.
+	 * @return string
+	 */
+	private function zone_label_for_material_type( string $material_type ): string {
+		return match ( $material_type ) {
+			MaterialType::FRONT->value   => __( 'frontkleur', 'kitchen-configurator-pro' ),
+			MaterialType::CARCASS->value => __( 'kastkleur', 'kitchen-configurator-pro' ),
+			MaterialType::PLINTH->value  => __( 'plintkleur', 'kitchen-configurator-pro' ),
+			MaterialType::WORKTOP->value => __( 'worktop', 'kitchen-configurator-pro' ),
+			default                      => __( '—', 'kitchen-configurator-pro' ),
+		};
 	}
 
 	/**
@@ -85,7 +159,12 @@ final class ColorsPage extends AbstractCrudPage {
 
 		foreach ( $materials->find_all() as $material ) {
 			$row = Arr::to_array( $material );
-			$options[ (string) $row['id'] ] = (string) $row['name'];
+			$label = sprintf(
+				'%s (%s)',
+				(string) $row['name'],
+				$this->zone_label_for_material_type( (string) $row['material_type'] )
+			);
+			$options[ (string) $row['id'] ] = $label;
 		}
 
 		$fields = $this->form_fields();

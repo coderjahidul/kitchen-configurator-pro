@@ -28,7 +28,22 @@
 		});
 	}
 
+	function initHeroVideo(visual) {
+		const video = visual.querySelector('.kcp-brand-hero-banner__video');
+
+		if (!(video instanceof HTMLVideoElement)) {
+			return;
+		}
+
+		const playPromise = video.play();
+
+		if (playPromise && typeof playPromise.catch === 'function') {
+			playPromise.catch(() => {});
+		}
+	}
+
 	document.addEventListener('DOMContentLoaded', () => {
 		document.querySelectorAll('.kcp-brand-sidebar__section.has-children').forEach(initSection);
+		document.querySelectorAll('.kcp-brand-hero-banner__visual').forEach(initHeroVideo);
 	});
 })();

@@ -9,14 +9,13 @@ declare(strict_types=1);
 
 namespace KitchenConfiguratorPro\Services;
 
-use KitchenConfiguratorPro\Domain\Entities\Cabinet;
 use KitchenConfiguratorPro\Domain\Entities\Color;
 use KitchenConfiguratorPro\Domain\Entities\Handle;
-use KitchenConfiguratorPro\Domain\Entities\Plinth;
-use KitchenConfiguratorPro\Repositories\CabinetRepository;
+use KitchenConfiguratorPro\Domain\Entities\Material;
+use KitchenConfiguratorPro\Domain\Enums\MaterialType;
 use KitchenConfiguratorPro\Repositories\ColorRepository;
 use KitchenConfiguratorPro\Repositories\HandleRepository;
-use KitchenConfiguratorPro\Repositories\PlinthRepository;
+use KitchenConfiguratorPro\Repositories\MaterialRepository;
 
 /**
  * Maps design zones to active catalog items for the frontend picker.
@@ -24,13 +23,12 @@ use KitchenConfiguratorPro\Repositories\PlinthRepository;
 final class DesignZoneCatalogService {
 
 	/**
-	 * Zone ID to catalog source key.
+	 * Zone ID to linked material type for color-based zones.
 	 */
-	private const ZONE_SOURCES = array(
-		'front'        => 'colors',
-		'handle_strip' => 'handles',
-		'cabinet'      => 'cabinets',
-		'plinth'       => 'plinths',
+	private const ZONE_MATERIAL_TYPES = array(
+		'front'   => MaterialType::FRONT,
+		'cabinet' => MaterialType::CARCASS,
+		'plinth'  => MaterialType::PLINTH,
 	);
 
 	/**
@@ -39,21 +37,26 @@ final class DesignZoneCatalogService {
 	private const ZONE_ADMIN_PAGES = array(
 		'front'        => 'kcp-colors',
 		'handle_strip' => 'kcp-handles',
-		'cabinet'      => 'kcp-cabinets',
-		'plinth'       => 'kcp-plinths',
+		'cabinet'      => 'kcp-colors',
+		'plinth'       => 'kcp-colors',
 	);
 
 	/**
-	 * @param ColorRepository   $colors   Color repository.
-	 * @param HandleRepository  $handles  Handle repository.
-	 * @param CabinetRepository $cabinets Cabinet repository.
-	 * @param PlinthRepository  $plinths  Plinth repository.
+	 * Active material IDs keyed by material type value.
+	 *
+	 * @var array<string, array<int, int>>|null
+	 */
+	private ?array $material_ids_by_type = null;
+
+	/**
+	 * @param ColorRepository    $colors    Color repository.
+	 * @param HandleRepository   $handles   Handle repository.
+	 * @param MaterialRepository $materials Material repository.
 	 */
 	public function __construct(
 		private readonly ColorRepository $colors,
 		private readonly HandleRepository $handles,
-		private readonly CabinetRepository $cabinets,
-		private readonly PlinthRepository $plinths
+		private readonly MaterialRepository $materials
 	) {
 	}
 
@@ -71,9 +74,9 @@ final class DesignZoneCatalogService {
 				continue;
 			}
 
-			$zone_id           = sanitize_key( (string) ( $zone['id'] ?? '' ) );
-			$zone['colors']      = $this->get_options_for_zone( $zone_id );
-			$hydrated[]        = $zone;
+			$zone_id        = sanitize_key( (string) ( $zone['id'] ?? '' ) );
+			$zone['colors'] = $this->get_options_for_zone( $zone_id );
+			$hydrated[]     = $zone;
 		}
 
 		return $hydrated;
@@ -96,35 +99,80 @@ final class DesignZoneCatalogService {
 	 * @return array<int, array<string, mixed>>
 	 */
 	private function get_options_for_zone( string $zone_id ): array {
-		$source = self::ZONE_SOURCES[ $zone_id ] ?? '';
+		if ( 'handle_strip' === $zone_id ) {
+			return array_map(
+				array( $this, 'map_handle' ),
+				$this->handles->find_all( array( 'is_active' => '1' ) )
+			);
+		}
 
-		if ( '' === $source ) {
+		$material_type = self::ZONE_MATERIAL_TYPES[ $zone_id ] ?? null;
+
+		if ( ! $material_type instanceof MaterialType ) {
 			return array();
 		}
 
-		$active = array( 'is_active' => '1' );
-
-		return match ( $source ) {
-			'colors'   => array_map( array( $this, 'map_color' ), $this->colors->find_all( $active ) ),
-			'handles'  => array_map( array( $this, 'map_handle' ), $this->handles->find_all( $active ) ),
-			'cabinets' => array_values( array_filter(
-				array_map( array( $this, 'map_cabinet' ), $this->cabinets->find_all( $active ) ),
-				array( $this, 'is_cabinet_finish_option' )
-			) ),
-			'plinths'  => array_map( array( $this, 'map_plinth' ), $this->plinths->find_all( $active ) ),
-			default    => array(),
-		};
+		return array_map(
+			array( $this, 'map_color' ),
+			$this->colors_for_material_type( $material_type )
+		);
 	}
 
 	/**
-	 * Cabinet zone options should be carcass finishes, not dimensioned products.
+	 * Active colors whose material matches the given type.
 	 *
-	 * @param array<string, mixed> $option Mapped catalog option.
+	 * @param MaterialType $material_type Material type.
+	 * @return array<int, Color>
 	 */
-	private function is_cabinet_finish_option( array $option ): bool {
-		$name = strtolower( (string) ( $option['name'] ?? '' ) );
+	private function colors_for_material_type( MaterialType $material_type ): array {
+		$allowed_material_ids = $this->material_ids_by_type()[ $material_type->value ] ?? array();
 
-		return ! preg_match( '/\b\d+\s*cm\b/', $name );
+		if ( empty( $allowed_material_ids ) ) {
+			return array();
+		}
+
+		$colors = array();
+
+		foreach ( $this->colors->find_all( array( 'is_active' => '1' ), 'sort_order', 'ASC' ) as $color ) {
+			if ( ! $color instanceof Color ) {
+				continue;
+			}
+
+			if ( ! isset( $allowed_material_ids[ $color->material_id ] ) ) {
+				continue;
+			}
+
+			$colors[] = $color;
+		}
+
+		return $colors;
+	}
+
+	/**
+	 * Build and cache active material IDs grouped by type.
+	 *
+	 * @return array<string, array<int, int>>
+	 */
+	private function material_ids_by_type(): array {
+		if ( null !== $this->material_ids_by_type ) {
+			return $this->material_ids_by_type;
+		}
+
+		$this->material_ids_by_type = array();
+
+		foreach ( MaterialType::cases() as $material_type ) {
+			$this->material_ids_by_type[ $material_type->value ] = array();
+		}
+
+		foreach ( $this->materials->find_all( array( 'is_active' => '1' ) ) as $material ) {
+			if ( ! $material instanceof Material ) {
+				continue;
+			}
+
+			$this->material_ids_by_type[ $material->material_type ][ $material->id ] = $material->id;
+		}
+
+		return $this->material_ids_by_type;
 	}
 
 	/**
@@ -156,38 +204,6 @@ final class DesignZoneCatalogService {
 			'description'    => $handle->description,
 			'price'          => (float) $handle->price,
 			'price_modifier' => (float) $handle->price,
-		);
-	}
-
-	/**
-	 * @param Cabinet $cabinet Cabinet entity.
-	 * @return array<string, mixed>
-	 */
-	private function map_cabinet( Cabinet $cabinet ): array {
-		return array(
-			'id'             => $cabinet->id,
-			'name'           => $cabinet->name,
-			'hex'            => '',
-			'image_url'      => $cabinet->image_url,
-			'description'    => $cabinet->description,
-			'price'          => (float) $cabinet->base_price,
-			'price_modifier' => (float) $cabinet->base_price,
-		);
-	}
-
-	/**
-	 * @param Plinth $plinth Plinth entity.
-	 * @return array<string, mixed>
-	 */
-	private function map_plinth( Plinth $plinth ): array {
-		return array(
-			'id'             => $plinth->id,
-			'name'           => $plinth->name,
-			'hex'            => '',
-			'image_url'      => $plinth->thumbnail_url,
-			'description'    => $plinth->description,
-			'price'          => (float) $plinth->base_price,
-			'price_modifier' => (float) $plinth->base_price,
 		);
 	}
 }

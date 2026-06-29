@@ -169,6 +169,10 @@ final class WooCommerceServiceProvider {
 			BrandCategoryFields::class,
 			static fn () => new BrandCategoryFields()
 		);
+		$this->container->singleton(
+			ProductCategoryVideoFields::class,
+			static fn () => new ProductCategoryVideoFields()
+		);
 	}
 
 	/**
@@ -183,6 +187,7 @@ final class WooCommerceServiceProvider {
 		$this->container->get( OrderMetaDisplay::class )->register();
 		$this->container->get( ShopPresenter::class )->register();
 		$this->container->get( BrandCategoryFields::class )->register();
+		$this->container->get( ProductCategoryVideoFields::class )->register();
 		$this->container->get( CartPresenter::class )->register();
 		$this->container->get( ProductOptionsPresenter::class )->register();
 		$this->container->get( ProductConfiguratorPresenter::class )->register();

@@ -13,6 +13,8 @@ use KitchenConfiguratorPro\Security\CapabilityManager;
 use KitchenConfiguratorPro\Services\CabinetSelectStepService;
 use KitchenConfiguratorPro\Services\DesignStepService;
 use KitchenConfiguratorPro\Services\ShopHeroService;
+use KitchenConfiguratorPro\Services\ShopPromoService;
+use KitchenConfiguratorPro\Services\SiteShellSettingsService;
 
 /**
  * Plugin settings page.
@@ -47,8 +49,10 @@ final class SettingsPage {
 				'quote_validity_days' => 30,
 				'design_check_price'  => 75,
 				'shop_hero'           => ShopHeroService::defaults(),
+				'shop_promo'          => ShopPromoService::defaults(),
 				'design_step'         => DesignStepService::defaults(),
 				'cabinet_select_step' => CabinetSelectStepService::defaults(),
+				'site_shell'          => SiteShellSettingsService::defaults(),
 			)
 		);
 
@@ -67,8 +71,10 @@ final class SettingsPage {
 						'quote_validity_days' => max( 1, (int) ( $_POST['quote_validity_days'] ?? 30 ) ),
 						'design_check_price'  => max( 0, (float) ( $_POST['design_check_price'] ?? 75 ) ),
 						'shop_hero'           => ShopHeroService::sanitize_post( (array) wp_unslash( $_POST ) ),
+						'shop_promo'          => ShopPromoService::sanitize_post( (array) wp_unslash( $_POST ) ),
 						'design_step'         => DesignStepService::sanitize_post( (array) wp_unslash( $_POST ) ),
 						'cabinet_select_step' => CabinetSelectStepService::sanitize_post( (array) wp_unslash( $_POST ) ),
+						'site_shell'          => SiteShellSettingsService::sanitize_post( (array) wp_unslash( $_POST ) ),
 					)
 				);
 
@@ -82,8 +88,10 @@ final class SettingsPage {
 		}
 
 		$shop_hero   = ShopHeroService::get_settings();
+		$shop_promo  = ShopPromoService::get_settings();
 		$design_step = DesignStepService::get_settings();
 		$cabinet_select_step = CabinetSelectStepService::get_settings();
+		$site_shell  = SiteShellSettingsService::get_settings();
 
 		$path = KCP_PLUGIN_DIR . 'templates/admin/settings.php';
 		include $path;

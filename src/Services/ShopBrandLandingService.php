@@ -144,6 +144,7 @@ final class ShopBrandLandingService {
 		$popular      = self::get_popular_products( $root );
 		$settings     = ShopBrandLandingSettingsService::get_for_term( $root );
 		$hero_image   = ShopBrandLandingSettingsService::get_hero_image_url( $root, $settings, $spotlight );
+		$hero_video   = ProductCategoryVideoService::get_video_url( (int) $root->term_id );
 
 		return array(
 			'root'              => $root,
@@ -158,6 +159,7 @@ final class ShopBrandLandingService {
 				'cta_label' => (string) $settings['hero_cta_label'],
 				'cta_url'   => (string) $settings['hero_cta_url'],
 				'image_url' => $hero_image,
+				'video_url' => $hero_video,
 				'badge'     => (string) $settings['hero_badge'],
 			),
 			'spotlight_products'=> $spotlight,
@@ -275,11 +277,13 @@ final class ShopBrandLandingService {
 
 			$thumbnail_id = (int) get_term_meta( $section->term_id, 'thumbnail_id', true );
 			$image_url    = $thumbnail_id > 0 ? (string) wp_get_attachment_image_url( $thumbnail_id, 'medium_large' ) : '';
+			$video_url    = ProductCategoryVideoService::get_video_url( (int) $section->term_id );
 
 			$tiles[] = array(
 				'name'      => $section->name,
 				'url'       => (string) get_term_link( $section ),
 				'image_url' => $image_url,
+				'video_url' => $video_url,
 			);
 		}
 

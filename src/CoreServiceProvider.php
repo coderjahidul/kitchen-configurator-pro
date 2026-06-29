@@ -181,8 +181,7 @@ final class CoreServiceProvider {
 				return new DesignZoneCatalogService(
 					$this->container->get( ColorRepository::class ),
 					$this->container->get( HandleRepository::class ),
-					$this->container->get( CabinetRepository::class ),
-					$this->container->get( PlinthRepository::class )
+					$this->container->get( MaterialRepository::class )
 				);
 			}
 		);
