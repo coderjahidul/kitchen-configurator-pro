@@ -37,7 +37,7 @@ final class SiteShellMenuBuilder {
 		}
 
 		return array(
-			self::link( __( 'configurator', 'kitchen-configurator-pro' ), $configurator_url, function_exists( 'is_shop' ) && is_shop() ),
+			self::link( __( 'configurator', 'kitchen-configurator-pro' ), $configurator_url, ConfiguratorLandingService::is_active() || ( function_exists( 'is_shop' ) && is_shop() ) ),
 			self::link( __( 'populaire opstellingen', 'kitchen-configurator-pro' ), $shop_url, function_exists( 'is_product_category' ) && is_product_category() ),
 			self::link( __( 'webshop', 'kitchen-configurator-pro' ), $shop_url, function_exists( 'is_shop' ) && is_shop() ),
 			self::link( __( 'bezoek showroom', 'kitchen-configurator-pro' ), SiteShellSettingsService::get_settings()['announcement_url'] ?? '', false ),

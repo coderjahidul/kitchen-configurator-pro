@@ -16,6 +16,7 @@ $desktop_nav     = is_array( $model['desktop_nav'] ?? null ) ? $model['desktop_n
 $breadcrumbs     = is_array( $model['breadcrumbs'] ?? null ) ? $model['breadcrumbs'] : array();
 $cart_count      = (int) ( $model['cart_count'] ?? 0 );
 $logo_url        = (string) ( $model['logo_url'] ?? '' );
+$logo_alt        = (string) ( $model['logo_alt'] ?? get_bloginfo( 'name', 'display' ) );
 ?>
 <div class="kcp-shell-mobile" id="kcp-shell-mobile" aria-hidden="true">
 	<div class="kcp-shell-mobile__panel">
@@ -123,7 +124,7 @@ $logo_url        = (string) ( $model['logo_url'] ?? '' );
 			aria-label="<?php esc_attr_e( 'Terug naar de Corporate website', 'kitchen-configurator-pro' ); ?>"
 		>
 			<?php if ( '' !== $logo_url ) : ?>
-				<img src="<?php echo esc_url( $logo_url ); ?>" alt="" class="kcp-shell-nav__logo-image" loading="eager" decoding="async" />
+				<img src="<?php echo esc_url( $logo_url ); ?>" alt="<?php echo esc_attr( $logo_alt ); ?>" class="kcp-shell-nav__logo-image" loading="eager" decoding="async" />
 			<?php else : ?>
 			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 63 64" fill="none" aria-hidden="true">
 				<path d="M31.2727 0.654999C14.1091 0.654999 0 14.7639 0 32.0727C0 49.3816 14.1091 63.345 31.2727 63.345C48.5818 63.345 62.5455 49.2361 62.5455 32.0727C62.5455 14.9093 48.5818 0.654999 31.2727 0.654999ZM31.2727 59.8541C16 59.8541 3.63636 47.3452 3.63636 32.0727C3.63636 16.8002 16 4.29131 31.2727 4.29131C46.5455 4.29131 59.0545 16.8002 59.0545 32.0727C59.0545 47.3452 46.6909 59.8541 31.2727 59.8541Z" fill="currentColor"/>

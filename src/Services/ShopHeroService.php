@@ -127,6 +127,22 @@ final class ShopHeroService {
 		}
 
 		$image_urls = self::normalize_image_urls( $hero );
+		$design_url = DesignStepService::get_page_url();
+		$button_1_url = (string) ( $button_1['url'] ?? '' );
+		$button_2_url = (string) ( $button_2['url'] ?? '' );
+		$help_url     = (string) ( $help['url'] ?? '' );
+
+		if ( '' === $button_1_url ) {
+			$button_1_url = $design_url;
+		}
+
+		if ( '' === $button_2_url ) {
+			$button_2_url = $design_url;
+		}
+
+		if ( '' === $help_url ) {
+			$help_url = $design_url;
+		}
 
 		return array(
 			'enabled'        => $enabled,
@@ -136,15 +152,15 @@ final class ShopHeroService {
 			'image_interval' => max( 2, (int) ( $hero['image_interval'] ?? $defaults['image_interval'] ) ),
 			'button_1'       => array(
 				'label' => (string) ( $button_1['label'] ?? $defaults['button_1']['label'] ),
-				'url'   => (string) ( $button_1['url'] ?? '' ),
+				'url'   => $button_1_url,
 			),
 			'button_2'       => array(
 				'label' => (string) ( $button_2['label'] ?? $defaults['button_2']['label'] ),
-				'url'   => (string) ( $button_2['url'] ?? '' ),
+				'url'   => $button_2_url,
 			),
 			'help_link'      => array(
 				'label' => (string) ( $help['label'] ?? $defaults['help_link']['label'] ),
-				'url'   => (string) ( $help['url'] ?? '' ),
+				'url'   => $help_url,
 			),
 		);
 	}

@@ -220,12 +220,17 @@ final class DesignStepService {
 			$base_image = KCP_PLUGIN_URL . 'assets/frontend/images/design/kitchen-cabinet-handle.png';
 		}
 
+		$back_url = (string) ( $design['back_url'] ?? '' );
+		if ( '' === $back_url ) {
+			$back_url = ConfiguratorLandingService::get_page_url();
+		}
+
 		return array(
 			'breadcrumb'     => (string) ( $design['breadcrumb'] ?? $defaults['breadcrumb'] ),
 			'heading'        => (string) ( $design['heading'] ?? $defaults['heading'] ),
 			'description'    => (string) ( $design['description'] ?? $defaults['description'] ),
 			'base_image_url' => $base_image,
-			'back_url'       => (string) ( $design['back_url'] ?? '' ),
+			'back_url'       => $back_url,
 			'back_label'     => (string) ( $design['back_label'] ?? $defaults['back_label'] ),
 			'skip_url'             => (string) ( $design['skip_url'] ?? '' ),
 			'skip_label'           => (string) ( $design['skip_label'] ?? $defaults['skip_label'] ),
@@ -349,6 +354,28 @@ final class DesignStepService {
 	 */
 	private static function clamp_percent( mixed $value ): float {
 		return max( 0.0, min( 100.0, (float) $value ) );
+	}
+
+	/**
+	 * Published design step page permalink.
+	 */
+	public static function get_page_url(): string {
+		$page_id = self::get_page_id();
+
+		if ( $page_id <= 0 ) {
+			return '';
+		}
+
+		$url = get_permalink( $page_id );
+
+		return is_string( $url ) ? $url : '';
+	}
+
+	/**
+	 * Published page ID that renders the design step shortcode.
+	 */
+	public static function get_page_id(): int {
+		return self::resolve_design_page_id();
 	}
 
 	/**

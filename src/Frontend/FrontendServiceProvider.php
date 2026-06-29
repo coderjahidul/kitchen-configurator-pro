@@ -104,6 +104,16 @@ final class FrontendServiceProvider {
 		);
 
 		$this->container->singleton(
+			ConfiguratorLandingShortcode::class,
+			static fn () => new ConfiguratorLandingShortcode()
+		);
+
+		$this->container->singleton(
+			ConfiguratorLandingAssets::class,
+			static fn () => new ConfiguratorLandingAssets()
+		);
+
+		$this->container->singleton(
 			SiteShellPresenter::class,
 			static fn () => new SiteShellPresenter()
 		);
@@ -117,6 +127,7 @@ final class FrontendServiceProvider {
 	public function boot(): void {
 		$this->container->get( Shortcode::class )->register();
 		$this->container->get( DesignShortcode::class )->register();
+		$this->container->get( ConfiguratorLandingShortcode::class )->register();
 		$this->container->get( CabinetSelectShortcode::class )->register();
 		$this->container->get( CabinetGroupShortcode::class )->register();
 		$this->container->get( CabinetListShortcode::class )->register();
@@ -125,6 +136,7 @@ final class FrontendServiceProvider {
 		$this->container->get( SiteShellPresenter::class )->register();
 		$this->container->get( Assets::class )->register();
 		$this->container->get( DesignAssets::class )->register();
+		$this->container->get( ConfiguratorLandingAssets::class )->register();
 		$this->container->get( CabinetSelectAssets::class )->register();
 		$this->container->get( CabinetGroupAssets::class )->register();
 		$this->container->get( CabinetListAssets::class )->register();

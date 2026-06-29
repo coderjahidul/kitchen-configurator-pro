@@ -14,6 +14,7 @@ use KitchenConfiguratorPro\Frontend\CabinetGroupShortcode;
 use KitchenConfiguratorPro\Frontend\CabinetListShortcode;
 use KitchenConfiguratorPro\Frontend\CabinetRouter;
 use KitchenConfiguratorPro\Frontend\CabinetSelectShortcode;
+use KitchenConfiguratorPro\Frontend\ConfiguratorLandingShortcode;
 use KitchenConfiguratorPro\Frontend\DesignShortcode;
 use KitchenConfiguratorPro\Frontend\Shortcode;
 
@@ -35,7 +36,8 @@ final class SiteShellService {
 		}
 
 		if (
-			DesignShortcode::post_has_shortcode()
+			ConfiguratorLandingShortcode::post_has_shortcode()
+			|| DesignShortcode::post_has_shortcode()
 			|| CabinetSelectShortcode::post_has_shortcode()
 			|| CabinetGroupShortcode::post_has_shortcode()
 			|| CabinetListShortcode::post_has_shortcode()
@@ -65,7 +67,7 @@ final class SiteShellService {
 		$cart_url         = function_exists( 'wc_get_cart_url' )
 			? (string) wc_get_cart_url()
 			: home_url( '/cart/' );
-		$configurator_url = $shop_url;
+		$configurator_url = ConfiguratorLandingService::get_page_url();
 
 		return array(
 			'home_url'              => home_url( '/' ),
@@ -78,7 +80,7 @@ final class SiteShellService {
 			'announcement_cta'      => (string) ( $settings['announcement_cta'] ?? '' ),
 			'showroom_url'          => (string) ( $settings['announcement_url'] ?? '' ),
 			'corporate_url'         => (string) ( $settings['corporate_url'] ?? home_url( '/' ) ),
-			'logo_url'              => (string) ( $settings['logo_url'] ?? '' ),
+			'logo_url'              => self::resolve_logo_url( (string) ( $settings['logo_url'] ?? '' ) ),
 			'show_theme_toggle'     => ! empty( $settings['show_theme_toggle'] ),
 			'primary_nav'           => SiteShellMenuBuilder::get_primary_nav( $configurator_url, $shop_url ),
 			'mobile_primary_nav'    => SiteShellMenuBuilder::get_primary_nav( $configurator_url, $shop_url, false ),
@@ -100,6 +102,15 @@ final class SiteShellService {
 	public static function get_breadcrumbs(): array {
 		if ( class_exists( ShopBrandLandingService::class ) && ShopBrandLandingService::is_active() ) {
 			return ShopBrandLandingService::get_breadcrumbs();
+		}
+
+		if ( ConfiguratorLandingShortcode::post_has_shortcode() || ConfiguratorLandingShortcode::is_rendered() ) {
+			return array(
+				array(
+					'label' => __( 'configurator', 'kitchen-configurator-pro' ),
+					'url'   => '',
+				),
+			);
 		}
 
 		if ( DesignShortcode::post_has_shortcode() || DesignShortcode::is_rendered() ) {
@@ -141,6 +152,24 @@ final class SiteShellService {
 		}
 
 		return array();
+	}
+
+	/**
+	 * Plugin logo URL overrides the theme Site Identity logo when set.
+	 */
+	private static function resolve_logo_url( string $override_url ): string {
+		if ( '' !== $override_url ) {
+			return $override_url;
+		}
+
+		$logo_id = (int) get_theme_mod( 'custom_logo', 0 );
+		if ( $logo_id <= 0 ) {
+			return '';
+		}
+
+		$url = wp_get_attachment_image_url( $logo_id, 'full' );
+
+		return is_string( $url ) ? $url : '';
 	}
 
 	/**

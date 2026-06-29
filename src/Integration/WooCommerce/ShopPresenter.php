@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace KitchenConfiguratorPro\Integration\WooCommerce;
 
 use KitchenConfiguratorPro\Integration\WooCommerce\ProductOptionsPresenter;
+use KitchenConfiguratorPro\Services\ConfiguratorLandingService;
 use KitchenConfiguratorPro\Services\ShopBrandLandingService;
 use KitchenConfiguratorPro\Services\ShopHeroService;
 use KitchenConfiguratorPro\Services\ShopPromoService;
@@ -638,6 +639,10 @@ final class ShopPresenter {
 	 * @return bool
 	 */
 	private function is_shop_context(): bool {
+		if ( ConfiguratorLandingService::is_active() ) {
+			return true;
+		}
+
 		return function_exists( 'is_woocommerce' )
 			&& ( is_woocommerce() || is_shop() || is_product() || is_product_category() || is_product_tag() );
 	}

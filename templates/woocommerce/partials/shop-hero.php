@@ -53,37 +53,6 @@ $image_urls = array_values(
 
 ?>
 <section class="kcp-shop-hero">
-	<div class="kcp-shop-hero__content">
-		<?php if ( '' !== (string) ( $hero['heading'] ?? '' ) ) : ?>
-			<h2 class="kcp-shop-hero__title"><?php echo esc_html( (string) $hero['heading'] ); ?></h2>
-		<?php endif; ?>
-
-		<?php if ( '' !== (string) ( $hero['description'] ?? '' ) ) : ?>
-			<p class="kcp-shop-hero__description"><?php echo esc_html( (string) $hero['description'] ); ?></p>
-		<?php endif; ?>
-
-		<?php if ( ! empty( $buttons ) ) : ?>
-			<div class="kcp-shop-hero__actions">
-				<?php foreach ( $buttons as $button ) : ?>
-					<a
-						class="kcp-shop-hero__button"
-						href="<?php echo esc_url( $button['url'] ); ?>"
-						data-kcp-kitchen-type="<?php echo esc_attr( (string) ( $button['kitchen_type'] ?? KitchenTypeService::TYPE_GREP ) ); ?>"
-					>
-						<?php echo esc_html( $button['label'] ); ?>
-					</a>
-				<?php endforeach; ?>
-			</div>
-		<?php endif; ?>
-
-		<?php if ( '' !== $help_label && '' !== $help_url ) : ?>
-			<a class="kcp-shop-hero__help" href="<?php echo esc_url( $help_url ); ?>">
-				<span class="kcp-shop-hero__help-icon" aria-hidden="true">?</span>
-				<?php echo esc_html( $help_label ); ?>
-			</a>
-		<?php endif; ?>
-	</div>
-
 	<?php if ( ! empty( $image_urls ) ) : ?>
 		<div class="kcp-shop-hero__media<?php echo count( $image_urls ) > 1 ? ' kcp-shop-hero__media--animated' : ''; ?>">
 			<div
@@ -107,4 +76,37 @@ $image_urls = array_values(
 			</div>
 		</div>
 	<?php endif; ?>
+
+	<div class="kcp-shop-hero__overlay">
+		<div class="kcp-shop-hero__content">
+			<?php if ( '' !== (string) ( $hero['heading'] ?? '' ) ) : ?>
+				<h1 class="kcp-shop-hero__title"><?php echo esc_html( (string) $hero['heading'] ); ?></h1>
+			<?php endif; ?>
+
+			<?php if ( '' !== (string) ( $hero['description'] ?? '' ) ) : ?>
+				<p class="kcp-shop-hero__description"><?php echo esc_html( (string) $hero['description'] ); ?></p>
+			<?php endif; ?>
+
+			<?php if ( ! empty( $buttons ) ) : ?>
+				<div class="kcp-shop-hero__actions">
+					<?php foreach ( $buttons as $button ) : ?>
+						<a
+							class="kcp-shop-hero__button"
+							href="<?php echo esc_url( $button['url'] ); ?>"
+							data-kcp-kitchen-type="<?php echo esc_attr( (string) ( $button['kitchen_type'] ?? KitchenTypeService::TYPE_GREP ) ); ?>"
+						>
+							<?php echo esc_html( $button['label'] ); ?>
+						</a>
+					<?php endforeach; ?>
+				</div>
+			<?php endif; ?>
+
+			<?php if ( '' !== $help_label && '' !== $help_url ) : ?>
+				<a class="kcp-shop-hero__help" href="<?php echo esc_url( $help_url ); ?>">
+					<span class="kcp-shop-hero__help-icon" aria-hidden="true">?</span>
+					<?php echo esc_html( $help_label ); ?>
+				</a>
+			<?php endif; ?>
+		</div>
+	</div>
 </section>

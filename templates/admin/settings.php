@@ -92,7 +92,7 @@ $design_step = is_array( $design_step ?? null ) ? $design_step : array();
 		</table>
 
 		<h2><?php esc_html_e( 'Shop page hero', 'kitchen-configurator-pro' ); ?></h2>
-		<p class="description"><?php esc_html_e( 'Content shown at the top of the shop page, above the product grid.', 'kitchen-configurator-pro' ); ?></p>
+		<p class="description"><?php esc_html_e( 'Content shown at the top of the shop page and on pages using [kcp_configurator_landing], above the product grid.', 'kitchen-configurator-pro' ); ?></p>
 
 		<table class="form-table" role="presentation">
 			<tr>
@@ -398,6 +398,17 @@ $design_step = is_array( $design_step ?? null ) ? $design_step : array();
 				</div>
 			</div>
 		<?php endif; ?>
+
+		<h2><?php esc_html_e( 'Configurator landing page', 'kitchen-configurator-pro' ); ?></h2>
+		<p class="description">
+			<?php
+			printf(
+				/* translators: %s: shortcode example */
+				esc_html__( 'Entry page matching the reference configurator homepage. Add the shortcode %s to your main configurator page.', 'kitchen-configurator-pro' ),
+				'<code>[kcp_configurator_landing]</code>'
+			);
+			?>
+		</p>
 
 		<h2><?php esc_html_e( 'Design step page', 'kitchen-configurator-pro' ); ?></h2>
 		<p class="description">
